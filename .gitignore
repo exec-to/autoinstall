@@ -1,2 +1,5 @@
 __pycache__/
+.idea/
 app/__pycache__/
+supervisord.pid
+tmp/
