@@ -1,27 +1,35 @@
+# -*- coding: UTF-8 -*-
 from flask import Flask, Blueprint, render_template, url_for, request, jsonify
-from flask_restx import Resource, Api, reqparse, fields
+from flask_restx import Resource, Api, reqparse, fields, errors
 import logging
 import os
 import shutil
+from app import config
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy_filters import apply_filters
+from app import core as CoreLib
+
 
 app = Flask(__name__)
 blueprint = Blueprint('api', __name__, url_prefix='/api/v1.0')
-api = Api(blueprint, version='1.0', title='Autoinstall API', description='Autoinstall API')
-app.register_blueprint(blueprint)
+api = Api(blueprint,
+          version='1.0',
+          title='Autoinstall API',
+          description='Autoinstall API',
+          authorizations=config.authorizations
+)
 
-model = api.model('Model', {
-    'task': fields.String,
-    'uri': fields.Url('api.hello', absolute = True)
-    # 'uri': fields.Url('api.hello_ep') relation 0xff00
+app.register_blueprint(blueprint)
+core = CoreLib.Core()
+
+
+server_model = api.model('Model', {
+    'id': fields.String,
+    'adman_id': fields.String,
+    'uri': fields.Url('api.server_configure_ep', absolute = True),
+    'message': fields.String
 })
 
-class TodoDao(object):
-    def __init__(self, todo_id, task):
-        self.todo_id = todo_id
-        self.task = task
-
-        # This field will not be sent in the response
-        self.status = 'active'
 
 logging.basicConfig(
     format=u'%(levelname)-8s [%(asctime)s] %(message)s',
@@ -29,39 +37,121 @@ logging.basicConfig(
     filename="/var/log/docker-flask.log"
 )
 
-# Function to Change root directory of the process.
-def change_root_directory(path):
-    try:
-        os.chdir(path)
-        os.chroot(path)
-    except Exception as e:
-        app.logger.debug('Не могу выполнить chroot: {}'.format(str(e)))
-        pass
-
-#@api.route('/hello', endpoint='hello_ep' [default 'hello']) relation 0xff00
-@api.route('/hello')
-@api.doc(params={'rate': 'Rate limit'})
-class Hello(Resource):  # Create a RESTful resource
-    @api.marshal_with(model)
+@api.route('/servers', endpoint='servers_list_ep')
+class Servers(Resource):
+    @api.doc(security='apikey')
+    @api.marshal_with(server_model)
     def get(self):  # Create GET endpoint
         """
-        returns a list of hello
+        returns a list of servers
         """
-        return TodoDao(todo_id='my_todo', task='Remember the rate: {}'.format(5))
+        headers = request.headers
+        auth = headers.get("X-Api-Key")
+        if auth != config.auth['adman']:
+            app.logger.debug('Unauthorized, 401')
+            return {"message": "Error: Unauthorized"}, 401
+        try:
+            session = sessionmaker(bind=core.engine)()
+        except Exception as e:
+            msg = 'Can\'t initialize session. Error: {}'.format(str(e))
+            app.logger.error(msg)
+            return {"message": msg}, 500
 
-    def put(self):  # Create PUT endpoint
-        """
-        put method with arguments
-        """
+        try:
+            servers = session.query(CoreLib.Server).all()
+
+        except Exception as e:
+            msg = 'Can\'t get servers. Error: {}'.format(str(e))
+            app.logger.error(msg)
+            return {"message": msg}, 500
+
+        return servers
+
+
+# TODO: Check for duplicate MAC-address on many servers
+@api.route('/servers/configure/<int:adman_id>', endpoint='server_configure_ep')
+class ServerConfigure(Resource):
+    """
+    Configure server
+    """
+    @api.doc(security='apikey')
+    def put(self, adman_id):  # Create GET endpoint
+        headers = request.headers
+        app.logger.debug(headers)
+        auth = headers.get("X-Api-Key")
+        if auth != config.auth['adman']:
+            app.logger.debug('Unauthorized, 401')
+            return {"message": "Error: Unauthorized"}, 401
+
         parser = reqparse.RequestParser(bundle_errors=True)
-        parser.add_argument('rate', type=int, help='Rate to charge for this resource', required=True)
-        parser.add_argument('foo', type=int, required=True)
-        parser.add_argument('bar', type=int, required=True)
+        parser.add_argument('mac_addr', action='append', help="List of server MAC-address")
         args = parser.parse_args()
 
-        return args.rate
-    # return render_template('hello.html', message="Hello World!")
+        app.logger.debug("args: {}".format(args))
 
+        try:
+            session = sessionmaker(bind=core.engine)()
+        except Exception as e:
+            msg = 'Can\'t initialize session. Error: {}'.format(str(e))
+            app.logger.error(msg)
+            return {"message": msg}, 500
+
+        try:
+            server = session.query(CoreLib.Server).filter_by(adman_id=adman_id).first()
+            if server is None:
+                server = CoreLib.Server(adman_id=adman_id)
+                session.add(server)
+                session.commit()
+
+            app.logger.debug("adman_id: {}".format(server.adman_id))
+
+            if hasattr(args, 'mac_addr') and args.mac_addr is not None:
+                for addr in args.mac_addr:
+                    mac_exist = False
+                    # query to check mac-address exist
+                    filters = [
+                        {'field': 'mac_addr', 'op': 'ilike', 'value': addr}
+                    ]
+                    macs = session.query(CoreLib.MacTable)
+                    macs = apply_filters(macs, filters)
+                    for mac in macs:
+                        if mac.server_id == server.adman_id:
+                            mac_exist = True
+                        else:
+                            msg = 'MAC-address already used by adman server ID: {}'.format(mac.server_id)
+                            app.logger.error(msg)
+                            return {"message": msg}, 500
+
+                    if mac_exist:
+                        continue
+
+                    macaddr = CoreLib.MacTable(server_id=server.adman_id, mac_addr=addr)
+                    app.logger.debug('Add MAC: {}'.format(addr))
+                    session.add(macaddr)
+                session.commit()
+
+        except Exception as e:
+            msg = 'Can\'t configure server. Error: {}'.format(str(e))
+            app.logger.error(msg)
+            return {"message": msg}, 500
+
+        return {"server.id": server.id}
+
+
+
+# @api.route('/start/<server>') # from adman
+# @api.route('/finish/<server>') # from server
+
+
+
+# Function to Change root directory of the process.
+# def change_root_directory(path):
+#     try:
+#         os.chdir(path)
+#         os.chroot(path)
+#     except Exception as e:
+#         app.logger.debug('Не могу выполнить chroot: {}'.format(str(e)))
+#         pass
 
 # @api.route('/api/v1.0/complete/<server>')
 # def complete_install(server):
