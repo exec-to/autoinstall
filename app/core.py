@@ -31,6 +31,26 @@ class MacTable(Base):
         self.mac_addr = mac_addr
 
 
+# class InstallProcess(Base):
+#     __tablename__ = 'installations'
+#     id = Column('id', Integer, primary_key=True)
+#     # status
+#     # start time
+#     # token
+#     # OS
+#     # Disk partitioning
+#     # IP-addr
+#     #
+#     server_id = Column(Integer, nullable=False)
+#     # mac_addr = Column(String(20), nullable=False)
+#
+# class Networks(Base):
+#     __tablename__ = 'networks'
+#     id = Column('id', Integer, primary_key=True)
+#     subnet = Column(String(20), nullable=False) # 192.168.0.0
+#     netmask = Column(String(20), nullable=False)
+#     gateway = Column(String(20), nullable=False)
+
 class Core:
     def __init__(self):
         self.engine = db.create_engine(

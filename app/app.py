@@ -68,14 +68,13 @@ class Servers(Resource):
         return servers
 
 
-# TODO: Check for duplicate MAC-address on many servers
 @api.route('/servers/configure/<int:adman_id>', endpoint='server_configure_ep')
 class ServerConfigure(Resource):
-    """
-    Configure server
-    """
     @api.doc(security='apikey')
     def put(self, adman_id):  # Create GET endpoint
+        """
+        Configure server
+        """
         headers = request.headers
         app.logger.debug(headers)
         auth = headers.get("X-Api-Key")
@@ -87,7 +86,7 @@ class ServerConfigure(Resource):
         parser.add_argument('mac_addr', action='append', help="List of server MAC-address")
         args = parser.parse_args()
 
-        app.logger.debug("args: {}".format(args))
+        # app.logger.debug("args: {}".format(args))
 
         try:
             session = sessionmaker(bind=core.engine)()
@@ -103,7 +102,7 @@ class ServerConfigure(Resource):
                 session.add(server)
                 session.commit()
 
-            app.logger.debug("adman_id: {}".format(server.adman_id))
+            # app.logger.debug("adman_id: {}".format(server.adman_id))
 
             if hasattr(args, 'mac_addr') and args.mac_addr is not None:
                 for addr in args.mac_addr:
@@ -138,11 +137,75 @@ class ServerConfigure(Resource):
         return {"server.id": server.id}
 
 
+server_install_put_parser = reqparse.RequestParser(bundle_errors=True)
+server_install_put_parser.add_argument('os', help="Family of installing operating system", required=True)
+server_install_put_parser.add_argument('osver', help="OS release version", required=True)
+
+
+@api.route('/servers/install/<int:adman_id>', endpoint='server_install_ep')
+class ServerInstall(Resource):
+    @api.doc(security='apikey')
+    @api.doc(params={'adman_id': 'ID сервера в оборудовании ADMAN'})
+    @api.expect(server_install_put_parser)
+    def put(self, adman_id):  # Create PUT endpoint
+        """
+        Install OS on server
+        """
+        headers = request.headers
+        app.logger.debug(headers)
+        auth = headers.get("X-Api-Key")
+        if auth != config.auth['adman']:
+            app.logger.debug('Unauthorized, 401')
+            return {"message": "Error: Unauthorized"}, 401
+
+        args = server_install_put_parser.parse_args()
+
+        try:
+            session = sessionmaker(bind=core.engine)()
+        except Exception as e:
+            msg = 'Can\'t initialize session. Error: {}'.format(str(e))
+            app.logger.error(msg)
+            return {"message": msg}, 500
+
+        try:
+            server = session.query(CoreLib.Server).filter_by(adman_id=adman_id).first()
+            if server is None:
+                raise Exception('NotFound', 'Server with ID: {} not found. Run configure server first.'.format(adman_id))
+
+            setup_cmd = '{prog} {template}'.format(
+                prog=config.grub['setup_script'],
+                template=config.grub['templates'][args.os][args.osver]
+            )
+
+            stream = os.popen(setup_cmd)
+            output = stream.read()
+            app.logger.debug(output)
+            app.logger.debug({"setup_cmd": output})
+
+            srv_dir='s{srv}'.format(srv=adman_id)
+            grub_config = '{confdir}/{srv}/grub.cfg'.format(
+                confdir=config.grub['config-directory'],
+                srv=srv_dir
+            )
+
+            mkconfig_cmd = '{prog} -o {dst}'.format(
+                prog=config.grub['mkconfig-script'],
+                dst=grub_config
+            )
+
+            stream = os.popen(mkconfig_cmd)
+            output = stream.read()
+            app.logger.debug({"mkconfig_cmd": output})
+
+        except Exception as e:
+            msg = 'Can\'t run server install process. Error: {}'.format(str(e))
+            app.logger.error(msg)
+            return {"message": msg}, 500
+
+        return {"message": "success"}
 
 # @api.route('/start/<server>') # from adman
 # @api.route('/finish/<server>') # from server
-
-
 
 # Function to Change root directory of the process.
 # def change_root_directory(path):
