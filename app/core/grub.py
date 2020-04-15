@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 from app import config
+import os
 
 
 class Grub(object):
@@ -36,5 +37,37 @@ class Grub(object):
         # api.logger.debug({"setup_cmd": output})
 
 
+    @staticmethod
+    def create_symbol_link(server_id, link):
+        create_cmd = "/bin/ln -s {dir}/s{server_id} {dir}/{link}".format(
+            dir=config.grub['config-directory'],
+            server_id=server_id,
+            link=link
+        )
 
+        stream = os.popen(create_cmd)
+        output = stream.read()
+        return output
+
+    @staticmethod
+    def remove_symbol_link(link):
+        rm_cmd = "/bin/rm -f {dir}/{link}".format(
+            dir = config.grub['config-directory'],
+            link=link
+        )
+
+        stream = os.popen(rm_cmd)
+        output = stream.read()
+        return output
+
+    @staticmethod
+    def create_server_dir(server_id):
+        create_cmd = "/bin/mkdir {dir}/s{server_id}".format(
+            dir=config.grub['config-directory'],
+            server_id=server_id
+        )
+
+        stream = os.popen(create_cmd)
+        output = stream.read()
+        return output
 

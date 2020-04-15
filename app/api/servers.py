@@ -4,7 +4,6 @@ from app import config
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_filters import apply_filters
 from flask import url_for, request, jsonify
-import os
 from app import core as CoreLib
 from app.core.grub import Grub
 
@@ -135,31 +134,44 @@ class ServerConfigure(Resource):
                 session.add(server)
                 session.commit()
 
-            # TODO: Изменить логику. Удалять старые MAC-адреса сервера.
-            # TODO: Также сразу создавать каталоги и символьные ссылки для сервера по мак-адресам.
+            Grub.create_server_dir(server.adman_id)
+
+            # Проверяем, используются ли MAC-адреса другими серверами
             for item in request.json:
-                # api.logger.debug("mac: {}".format(item['mac_addr']))
-                mac_exist = False
-                # query to check mac-address exist
                 filters = [
-                    {'field': 'mac_addr', 'op': 'ilike', 'value': item['mac_addr']}
+                    {'field': 'mac_addr', 'op': 'ilike', 'value': item['mac_addr'].lower()}
                 ]
                 macs = session.query(CoreLib.MacTable)
-                macs = apply_filters(macs, filters)
+                macs = apply_filters(macs, filters).all()
+
+                # Проверяем, используются ли MAC-адреса другими серверами
                 for mac in macs:
-                    if mac.server_id == server.id:
-                        mac_exist = True
-                    else:
-                        msg = 'MAC-адрес используется сервером с ID: {}'.format(mac.server_id)
+                    if mac.server_id != server.id:
+                        msg = 'MAC-адрес {} уже используется сервером с ID: {}'.format(mac.mac_addr, mac.server_id)
                         api.logger.error(msg)
-                        return {"message": msg}, 500
+                        raise Exception('MacIsInUse', msg)
+                        # abort(400, message=msg)
 
-                if mac_exist:
-                    continue
+            # Удаляем MAC-адреса из БД и символьные ссылки из файловой системы
+            filters = [
+                {'field': 'server_id', 'op': '==', 'value': server.id}
+            ]
+            macs = session.query(CoreLib.MacTable)
+            macs = apply_filters(macs, filters).all()
 
-                macaddr = CoreLib.MacTable(server_id=server.id, mac_addr=item['mac_addr'])
-                api.logger.debug('Add MAC: {}'.format(item['mac_addr']))
+            for mac in macs:
+                api.logger.debug("mac: {}".format(mac.mac_addr))
+                Grub.remove_symbol_link(mac.mac_addr)
+                session.delete(mac)
+
+            session.commit()
+
+            # Добавляем MAC-адреса в БД и создаём символьные ссылки.
+            for item in request.json:
+                macaddr = CoreLib.MacTable(server_id=server.id, mac_addr=item['mac_addr'].lower())
                 session.add(macaddr)
+                Grub.create_symbol_link(server.adman_id, item['mac_addr'].lower())
+
             session.commit()
 
         except Exception as e:
@@ -167,7 +179,7 @@ class ServerConfigure(Resource):
             api.logger.error(msg)
             abort(400, message=msg)
 
-        return {"server.id": server.id}
+        return {"success": True}
 
 
 # # server_install_put_parser = reqparse.RequestParser(bundle_errors=True)
