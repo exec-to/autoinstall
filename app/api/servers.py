@@ -20,7 +20,7 @@ MacListModel = api.model('MacListModel', {
     'mac_list': fields.List(fields.Nested(MacAddressModel))
 })
 
-ServerModel = api.model('Model', {
+ServerModel = api.model('ServerModel', {
     'id': fields.String,
     'adman_id': fields.String,
     'uri': fields.Url('api.server_ep', absolute = True),
@@ -30,6 +30,7 @@ ServerModel = api.model('Model', {
 
 @api.route('/<int:adman_id>', endpoint='server_ep')
 class Server(Resource):
+    @api.doc(params={'adman_id': 'ID сервера в оборудовании adman'})
     @api.doc(security='apikey')
     @api.marshal_with(ServerModel, skip_none=True)
     def get(self, adman_id):  # Create GET endpoint
@@ -104,6 +105,7 @@ class ServerList(Resource):
 
 @api.route('/configure/<int:adman_id>', endpoint='server_configure_ep')
 class ServerConfigure(Resource):
+    @api.doc(params={'adman_id': 'ID сервера в оборудовании adman'})
     @api.doc(security='apikey')
     @api.expect([MacAddressModel])
     def put(self, adman_id):  # Create PUT endpoint
@@ -180,88 +182,3 @@ class ServerConfigure(Resource):
             abort(400, message=msg)
 
         return {"success": True}
-
-
-# # server_install_put_parser = reqparse.RequestParser(bundle_errors=True)
-# # server_install_put_parser.add_argument('os', help="Family of installing operating system", required=True)
-# # server_install_put_parser.add_argument('osver', help="OS release version", required=True)
-#
-#
-# @api.route('/install/<int:adman_id>', endpoint='server_install_ep')
-# class ServerInstall(Resource):
-#     @api.doc(security='apikey')
-#     @api.doc(params={'adman_id': 'ID сервера в оборудовании ADMAN'})
-#     # @api.expect(server_install_put_parser)
-#     def put(self, adman_id):  # Create PUT endpoint
-#         """
-#         Install OS on server
-#         """
-#         headers = request.headers
-#         api.logger.debug(headers)
-#         auth = headers.get("X-Api-Key")
-#         if auth != config.auth['adman']:
-#             api.logger.debug('Unauthorized, 401')
-#             return {"message": "Error: Unauthorized"}, 401
-#
-#         # args = server_install_put_parser.parse_args()
-#         args = None
-#
-#         try:
-#             session = sessionmaker(bind=core.engine)()
-#         except Exception as e:
-#             msg = 'Can\'t initialize session. Error: {}'.format(str(e))
-#             api.logger.error(msg)
-#             return {"message": msg}, 500
-#
-#         try:
-#             server = session.query(CoreLib.Server).filter_by(adman_id=adman_id).first()
-#             if server is None:
-#                 raise Exception('NotFound', 'Server with ID: {} not found. Run configure server first.'.format(adman_id))
-#
-#             Grub.update_template(args)
-#             Grub.mkconfig(adman_id)
-#
-#         except Exception as e:
-#             msg = 'Can\'t run server install process. Error: {}'.format(str(e))
-#             api.logger.error(msg)
-#             return {"message": msg}, 500
-#
-#         return {"message": "success"}
-
-
-# @api.route('/complete/<int:adman_id>/<string:token>', endpoint='server_install_complete_ep')
-# class ServerInstallComplete(Resource):
-#     @api.doc(params={
-#         'adman_id': 'ID сервера в оборудовании ADMAN',
-#         'token': 'Токен установки, генерируется при инициализации установки'
-#     })
-#     def get(self, adman_id, token):
-#         """
-#         Сообщить о завершении установки ОС
-#         """
-#         # args = InstallParams(os='local', osver='0')
-#
-#         try:
-#             session = sessionmaker(bind=core.engine)()
-#         except Exception as e:
-#             msg = 'Can\'t initialize session. Error: {}'.format(str(e))
-#             api.logger.error(msg)
-#             return {"message": msg}, 500
-#
-#         try:
-#             server = session.query(CoreLib.Server).filter_by(adman_id=adman_id).first()
-#             if server is None:
-#                 raise Exception('NotFound', 'Server with ID: {} not found. Run configure server first.'.format(adman_id))
-#
-#             # Проверить токен
-#             # return {"message": "Error: Unauthorized"}, 401
-#
-#             # Grub.update_template(args)
-#             # Grub.mkconfig(adman_id)
-#
-#         except Exception as e:
-#             msg = 'Can\'t execute finish installation. Error: {}'.format(str(e))
-#             api.logger.error(msg)
-#             return {"message": msg}, 500
-#
-#         return {"message": "success"}

@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 from app import config
-import os
+import os, sys, stat
 
 
 class Grub(object):
@@ -20,6 +20,20 @@ class Grub(object):
 
         stream = os.popen(mkconfig_cmd)
         output = stream.read()
+
+        # Read in the file
+        with open(grub_config, 'r') as file:
+            filedata = file.read()
+
+        # Replace the target string
+        filedata = filedata.replace('__srv_name__', str(adman_id))
+
+        # Write the file out again
+        with open(grub_config, 'w') as file:
+            file.write(filedata)
+
+        os.chmod(grub_config, 436)
+
         return output
         # api.logger.debug({"mkconfig_cmd": output})
 
@@ -27,7 +41,7 @@ class Grub(object):
     def update_template(args):
         setup_cmd = '{prog} {template}'.format(
             prog=config.grub['setup_script'],
-            template=config.grub['templates'][args.os][args.osver]
+            template=config.grub['templates'][args['os']][args['osver']]
         )
 
         stream = os.popen(setup_cmd)
@@ -39,8 +53,8 @@ class Grub(object):
 
     @staticmethod
     def create_symbol_link(server_id, link):
-        create_cmd = "/bin/ln -s {dir}/s{server_id} {dir}/{link}".format(
-            dir=config.grub['config-directory'],
+        os.chdir(config.grub['config-directory'])
+        create_cmd = "/bin/ln -s s{server_id} {link}".format(
             server_id=server_id,
             link=link
         )
