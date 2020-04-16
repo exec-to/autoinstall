@@ -5,6 +5,7 @@ from sqlalchemy import Table, Column, Integer, String, MetaData, Boolean, Foreig
 from sqlalchemy.orm import mapper
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
+import datetime
 
 Base = declarative_base()
 
@@ -13,7 +14,7 @@ class Server(Base):
     __tablename__ = 'servers'
     id = Column('id', Integer, primary_key=True)
     adman_id = Column(Integer, nullable=False)
-    api_key = Column(String(40), nullable=True)
+    # api_key = Column(String(40), nullable=True)
     maintenance = Column(Boolean, default=False)
 
     def __init__(self, adman_id):
@@ -31,25 +32,28 @@ class MacTable(Base):
         self.mac_addr = mac_addr
 
 
-# class InstallProcess(Base):
-#     __tablename__ = 'installations'
-#     id = Column('id', Integer, primary_key=True)
-#     # status
-#     # start time
-#     # token
-#     # OS
-#     # Disk partitioning
-#     # IP-addr
-#     #
-#     server_id = Column(Integer, nullable=False)
-#     # mac_addr = Column(String(20), nullable=False)
-#
-# class Networks(Base):
-#     __tablename__ = 'networks'
-#     id = Column('id', Integer, primary_key=True)
-#     subnet = Column(String(20), nullable=False) # 192.168.0.0
-#     netmask = Column(String(20), nullable=False)
-#     gateway = Column(String(20), nullable=False)
+class Install(Base):
+    __tablename__ = 'installs'
+    id = Column('id', Integer, primary_key=True)
+    adman_id = Column(Integer, nullable=False)
+    os = Column(String(20), nullable=False)
+    osver = Column(String(20), nullable=False)
+    token = Column(String(32), nullable=False)
+    ipaddr = Column(String(32), nullable=False)
+    passwdhash = Column(String(128), nullable=False) # mkpasswd -m sha-512 'пароль'
+    status = Column(Boolean, default=False) # 0 - устанавливается, 1 - завершена
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    diskpart = Column(Integer, nullable=False, default=0)
+
+    def __init__(self, adman_id, os, osver, token, ipaddr, passwdhash, diskpart):
+        self.adman_id = adman_id
+        self.os = os
+        self.osver = osver
+        self.token = token
+        self.ipaddr = ipaddr
+        self.passwdhash = passwdhash
+        self.diskpart = diskpart
+
 
 class Core:
     def __init__(self):

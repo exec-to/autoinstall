@@ -136,6 +136,10 @@ class ServerConfigure(Resource):
                 session.add(server)
                 session.commit()
 
+            if server.maintenance:
+                msg = 'Сервер находится в режиме обслуживания. Внесение настроек заблокировано.'
+                abort(400, message=msg)
+
             Grub.create_server_dir(server.adman_id)
 
             # Проверяем, используются ли MAC-адреса другими серверами

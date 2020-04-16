@@ -41,7 +41,7 @@ class Grub(object):
     def update_template(args):
         setup_cmd = '{prog} {template}'.format(
             prog=config.grub['setup_script'],
-            template=config.grub['templates'][args['os']][args['osver']]
+            template=config.grub['templates'][args['os'].lower()][args['osver'].lower()]
         )
 
         stream = os.popen(setup_cmd)
