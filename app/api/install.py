@@ -53,15 +53,9 @@ class InstallRun(Resource):
                 msg = 'Сервер уже находится в режиме обслуживания. Дождитесь завершения операций.'
                 raise Exception('MaitenanceMode', msg)
 
-            api.logger.debug(request.json)
+            # api.logger.debug(request.json)
             Grub.update_template(request.json)
             Grub.mkconfig(adman_id)
-
-            # + TODO: Создать токен установки, сохранить в БД.
-            # + TODO: Получить параметры из заказа: IP-адрес/маску/шлюз/DNS, ОС, пароль, разметка диска
-            # TODO: Сгенерировать шаблон и сохранить
-            # TODO: Реализовать проверку токена
-            # TODO: Создать каталог и шаблоны файлов preseed
 
             token = Utils.get_token()
             ipaddr = request.json['ipaddr']
@@ -87,13 +81,14 @@ class InstallRun(Resource):
         return {"success": True}
 
 
-@api.route('/complete/<int:adman_id>/<string:token>', endpoint='server_install_complete_ep')
+@api.route('/complete/<int:adman_id>', endpoint='server_install_complete_ep')
 class InstallComplete(Resource):
     @api.doc(params={
         'adman_id': 'ID сервера в оборудовании adman',
         'token': 'Токен установки, генерируется при инициализации установки'
     })
-    def get(self, adman_id, token):
+    @api.doc(security='querykey')
+    def get(self, adman_id):
         """
         Сообщить о завершении установки ОС
         """
@@ -116,8 +111,7 @@ class InstallComplete(Resource):
             # Проверить токен
             filters = [
                 {'field': 'adman_id', 'op': '==', 'value': adman_id},
-                {'field': 'status', 'op': '==', 'value': 0},
-                {'field': 'token', 'op': '==', 'value': token}
+                {'field': 'token', 'op': '==', 'value': request.args.get('token')}
             ]
             install = session.query(CoreLib.Install)
             install = apply_filters(install, filters).first()
@@ -125,6 +119,10 @@ class InstallComplete(Resource):
             if install is None:
                 raise Exception('Unauthorized',
                                 'Для выполнения операции требуется авторизация по токену.')
+
+            if install.status:
+                raise Exception('AlreadyComplete',
+                                'Операция уже была завершена ранее.')
 
             Grub.update_template(args)
             Grub.mkconfig(adman_id)
@@ -136,6 +134,6 @@ class InstallComplete(Resource):
         except Exception as e:
             msg = 'Не удалось выполнить запрос на завершение установки ОС. Ошибка: {}'.format(str(e))
             api.logger.error(msg)
-            return {"message": msg}, 500
+            return {"message": msg}, 400
 
         return {"success": True}

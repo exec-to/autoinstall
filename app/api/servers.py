@@ -25,6 +25,7 @@ ServerModel = api.model('ServerModel', {
     'adman_id': fields.String,
     'uri': fields.Url('api.server_ep', absolute = True),
     'message': fields.String,
+    'maintenance': fields.String,
     'mac_list': fields.List(fields.Nested(MacAddressModel))
 })
 

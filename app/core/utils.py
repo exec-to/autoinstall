@@ -32,16 +32,16 @@ class Utils(object):
     @staticmethod
     def create_preseed_conf(adman_id, params, token):
 
-        srv_dir = 's{srv}'.format(srv=adman_id)
-        preseed_config = '{confdir}/{srv}/{srv}.seed'.format(
-            confdir=config.grub['config-directory'],
-            srv=srv_dir
-        )
-
-        preseed_template = '{preseeddir}/{os}{osver}.seed'.format(
+        preseed_template = '{preseeddir}/{os}{osver}_{diskpart}.seed'.format(
             preseeddir=config.grub['preseed-directory'],
             os=params['os'].lower(),
-            osver=params['osver'].lower()
+            osver=params['osver'].lower(),
+            diskpart=params['diskpart'].lower()
+        )
+
+        preseed_config = '{confdir}/s{srv}/s{srv}.seed'.format(
+            confdir=config.grub['config-directory'],
+            srv=adman_id
         )
 
         mkconfig_cmd = '/bin/cp -f {src} {dst}'.format(
@@ -52,7 +52,7 @@ class Utils(object):
         stream = os.popen(mkconfig_cmd)
         output = stream.read()
 
-        # --
+        # -- Fill template
 
         gateway, netmask = Utils.get_network_settings(params['ipaddr'])
 
