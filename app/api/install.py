@@ -135,6 +135,10 @@ class InstallComplete(Resource):
                 raise Exception('AlreadyComplete',
                                 'Операция уже была завершена ранее.')
 
+            if install.status == 2:
+                raise Exception('AlreadyBreak',
+                                'Операция уже была отменена ранее.')
+
             Grub.update_template(args)
             Grub.mkconfig(adman_id)
 
