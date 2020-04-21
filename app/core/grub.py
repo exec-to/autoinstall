@@ -48,7 +48,7 @@ class Grub(object):
         output = stream.read()
         return output
         # api.logger.debug(output)
-        # api.logger.debug({"setup_cmd": output})
+
 
 
     @staticmethod

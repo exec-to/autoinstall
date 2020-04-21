@@ -43,13 +43,13 @@ class Server(Resource):
         headers = request.headers
         auth = headers.get("X-Api-Key")
         if auth != config.auth['adman']:
-            abort(401)
+            abort(401, success=False)
         try:
             session = sessionmaker(bind=core.engine)()
         except Exception as e:
             msg = 'Не удаётся инициализировать соединение с БД: {}'.format(str(e))
             api.logger.error(msg)
-            abort(500, message=msg)
+            abort(500, message=msg, success=False)
 
         server = None
         try:
@@ -62,7 +62,7 @@ class Server(Resource):
         except Exception as e:
             msg = 'Не удаётся получить сервер. Ошибка: {}'.format(str(e))
             api.logger.error(msg)
-            abort(400, message=msg)
+            abort(400, message=msg, success=False)
 
         return server
 
@@ -81,13 +81,13 @@ class ServerList(Resource):
         auth = headers.get("X-Api-Key")
         if auth != config.auth['adman']:
             api.logger.debug('Unauthorized, 401')
-            abort(401)
+            abort(401, success=False)
         try:
             session = sessionmaker(bind=core.engine)()
         except Exception as e:
             msg = 'Не удаётся инициализировать соединение с БД: {}'.format(str(e))
             api.logger.error(msg)
-            abort(500, message=msg)
+            abort(500, message=msg, success=False)
 
         servers = None
         try:
@@ -99,7 +99,7 @@ class ServerList(Resource):
         except Exception as e:
             msg = 'Не удаётся получить список серверов. Ошибка: {}'.format(str(e))
             api.logger.error(msg)
-            abort(400, message=msg)
+            abort(400, message=msg, success=False)
 
         return servers
 
@@ -118,7 +118,7 @@ class ServerConfigure(Resource):
         auth = headers.get("X-Api-Key")
         if auth != config.auth['adman']:
             api.logger.debug('Unauthorized, 401')
-            abort(401)
+            abort(401, success=False)
 
         # api.logger.debug(request.json)
         session = None
@@ -127,7 +127,7 @@ class ServerConfigure(Resource):
         except Exception as e:
             msg = 'Не удаётся инициализировать соединение с БД: {}'.format(str(e))
             api.logger.error(msg)
-            abort(500, message=msg)
+            abort(500, message=msg, success=False)
 
         server = None
         try:
@@ -139,7 +139,7 @@ class ServerConfigure(Resource):
 
             if server.maintenance:
                 msg = 'Сервер находится в режиме обслуживания. Внесение настроек заблокировано.'
-                abort(400, message=msg)
+                abort(400, message=msg, success=False)
 
             Grub.create_server_dir(server.adman_id)
 
@@ -184,6 +184,6 @@ class ServerConfigure(Resource):
         except Exception as e:
             msg = 'Не удаётся настроить сервер. Ошибка: {}'.format(str(e))
             api.logger.error(msg)
-            abort(400, message=msg)
+            abort(400, message=msg, success=False)
 
         return {"success": True}

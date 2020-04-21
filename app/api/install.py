@@ -19,8 +19,18 @@ InstallModel = api.model('InstallModel', {
     'diskpart': fields.String
 })
 
+InstallGetModel = api.model('InstallGetModel', {
+    'adman_id': fields.String,
+    'os': fields.String,
+    'osver': fields.String,
+    'ipaddr': fields.String,
+    'token': fields.String,
+    'diskpart': fields.String,
+    'status': fields.String
+})
 
-@api.route('/run/<int:adman_id>', endpoint='server_install_ep')
+
+@api.route('/run/<int:adman_id>', endpoint='server_install_run_ep')
 class InstallRun(Resource):
     @api.doc(security='apikey')
     @api.doc(params={'adman_id': 'ID сервера в оборудовании adman'})
@@ -34,7 +44,7 @@ class InstallRun(Resource):
         auth = headers.get("X-Api-Key")
         if auth != config.auth['adman']:
             api.logger.debug('Unauthorized, 401')
-            return {"message": "Error: Unauthorized"}, 401
+            return {"message": "Error: Unauthorized", "success": False}, 401
 
         session = None
         try:
@@ -42,7 +52,7 @@ class InstallRun(Resource):
         except Exception as e:
             msg = 'Не удаётся инициализировать соединение с БД: {}'.format(str(e))
             api.logger.error(msg)
-            abort(500, message=msg)
+            abort(500, message=msg, success=False)
 
         try:
             server = session.query(CoreLib.Server).filter_by(adman_id=adman_id).first()
@@ -53,18 +63,19 @@ class InstallRun(Resource):
                 msg = 'Сервер уже находится в режиме обслуживания. Дождитесь завершения операций.'
                 raise Exception('MaitenanceMode', msg)
 
-            # api.logger.debug(request.json)
             Grub.update_template(request.json)
+            # api.logger.debug('req: {}'.format(request.json))
             Grub.mkconfig(adman_id)
 
             token = Utils.get_token()
             ipaddr = request.json['ipaddr']
-            passwdhash = request.json['passwdhash']
             diskpart = request.json['diskpart']
             os = request.json['os']
             osver = request.json['osver']
 
-            install = CoreLib.Install(adman_id, os, osver, token, ipaddr, passwdhash, diskpart)
+            api.logger.debug('req: {}'.format(request.json))
+
+            install = CoreLib.Install(adman_id, os, osver, token, ipaddr, diskpart)
             session.add(install)
             session.commit()
 
@@ -76,9 +87,9 @@ class InstallRun(Resource):
         except Exception as e:
             msg = 'Не удаётся завершить инициализацию процесса установки: {}'.format(str(e))
             api.logger.error(msg)
-            return {"message": msg}, 500
+            return {"success": False, "message": msg}, 500
 
-        return {"success": True}
+        return {"success": True, "token": token}
 
 
 @api.route('/complete/<int:adman_id>', endpoint='server_install_complete_ep')
@@ -101,7 +112,7 @@ class InstallComplete(Resource):
         except Exception as e:
             msg = 'Не удаётся инициализировать соединение с БД: {}'.format(str(e))
             api.logger.error(msg)
-            abort(500, message=msg)
+            abort(500, message=msg, success=False)
 
         try:
             server = session.query(CoreLib.Server).filter_by(adman_id=adman_id).first()
@@ -120,20 +131,164 @@ class InstallComplete(Resource):
                 raise Exception('Unauthorized',
                                 'Для выполнения операции требуется авторизация по токену.')
 
-            if install.status:
+            if install.status == 1:
                 raise Exception('AlreadyComplete',
                                 'Операция уже была завершена ранее.')
 
             Grub.update_template(args)
             Grub.mkconfig(adman_id)
 
-            install.status = True
+            install.status = 1
             server.maintenance = False
             session.commit()
 
         except Exception as e:
             msg = 'Не удалось выполнить запрос на завершение установки ОС. Ошибка: {}'.format(str(e))
             api.logger.error(msg)
-            return {"message": msg}, 400
+            return {"message": msg, "success": False}, 400
 
         return {"success": True}
+
+@api.route('/break/<int:adman_id>', endpoint='server_install_break_ep')
+class InstallBreak(Resource):
+    @api.doc(params={
+        'adman_id': 'ID сервера в оборудовании adman',
+        'token': 'Токен установки, генерируется при инициализации установки'
+    })
+    @api.doc(security='querykey')
+    def get(self, adman_id):
+        """
+        Сообщить об отмене установки ОС
+        """
+        args = {'os': 'local', 'osver': '0'}
+
+        session = None
+
+        try:
+            session = sessionmaker(bind=core.engine)()
+        except Exception as e:
+            msg = 'Не удаётся инициализировать соединение с БД: {}'.format(str(e))
+            api.logger.error(msg)
+            abort(500, message=msg, success=False)
+
+        try:
+            server = session.query(CoreLib.Server).filter_by(adman_id=adman_id).first()
+            if server is None:
+                raise Exception('NotFound', 'Не найден сервер c ID: {}. Обновите сначала его конфигурацию.'.format(adman_id))
+
+            # Проверить токен
+            filters = [
+                {'field': 'adman_id', 'op': '==', 'value': adman_id},
+                {'field': 'token', 'op': '==', 'value': request.args.get('token')}
+            ]
+            install = session.query(CoreLib.Install)
+            install = apply_filters(install, filters).first()
+
+            if install is None:
+                raise Exception('Unauthorized',
+                                'Для выполнения операции требуется авторизация по токену.')
+
+            if install.status == 1:
+                raise Exception('AlreadyComplete',
+                                'Операция уже была успешно завершена ранее.')
+
+            if install.status == 2:
+                raise Exception('AlreadyBreak',
+                                'Операция отмены уже была завершена ранее.')
+
+            Grub.update_template(args)
+            Grub.mkconfig(adman_id)
+
+            install.status = 2
+            server.maintenance = False
+            session.commit()
+
+        except Exception as e:
+            msg = 'Не удалось выполнить запрос на отмену установки ОС. Ошибка: {}'.format(str(e))
+            api.logger.error(msg)
+            return {"message": msg, "success": False}, 400
+
+        return {"success": True}
+
+
+@api.route('/', endpoint='install_list_ep')
+class InstallList(Resource):
+    @api.doc(security='apikey')
+    @api.marshal_list_with(InstallGetModel)
+    def get(self):  # Create GET endpoint
+        """
+        Получить список операций установки ОС
+        """
+        session = None
+
+        headers = request.headers
+        auth = headers.get("X-Api-Key")
+        if auth != config.auth['adman']:
+            api.logger.debug('Unauthorized, 401')
+            abort(401, success=False)
+        try:
+            session = sessionmaker(bind=core.engine)()
+        except Exception as e:
+            msg = 'Не удаётся инициализировать соединение с БД: {}'.format(str(e))
+            api.logger.error(msg)
+            abort(500, message=msg, success=False)
+
+        installs = None
+        try:
+            installs = session.query(CoreLib.Install).all()
+
+        except Exception as e:
+            msg = 'Не удаётся получить список установок. Ошибка: {}'.format(str(e))
+            api.logger.error(msg)
+            abort(400, message=msg, success=False)
+
+        return installs
+
+
+@api.route('/<int:adman_id>', endpoint='server_install_ep')
+class Install(Resource):
+    @api.doc(params={
+        'adman_id': 'ID сервера в оборудовании adman',
+        'token': 'Токен установки, генерируется при инициализации установки'
+    })
+    @api.doc(security='querykey')
+    @api.marshal_with(InstallGetModel)
+    def get(self, adman_id):
+        """
+        Получить информацию по операции установки ОС
+        """
+
+        session = None
+
+        try:
+            session = sessionmaker(bind=core.engine)()
+        except Exception as e:
+            msg = 'Не удаётся инициализировать соединение с БД: {}'.format(str(e))
+            api.logger.error(msg)
+            abort(500, message=msg, success=False)
+
+        try:
+            server = session.query(CoreLib.Server).filter_by(adman_id=adman_id).first()
+            if server is None:
+                raise Exception('NotFound', 'Не найден сервер c ID: {}. Обновите сначала его конфигурацию.'.format(adman_id))
+
+            # Проверить токен
+            filters = [
+                {'field': 'adman_id', 'op': '==', 'value': adman_id},
+                {'field': 'token', 'op': '==', 'value': request.args.get('token')}
+            ]
+            install = session.query(CoreLib.Install)
+            install = apply_filters(install, filters).first()
+
+            if install is None:
+                raise Exception('Unauthorized',
+                                'Для выполнения операции требуется авторизация по токену.')
+
+        except Exception as e:
+            msg = 'Не удалось получить данные по операции установки ОС. Ошибка: {}'.format(str(e))
+            api.logger.error(msg)
+            return {"message": msg, "success": False}, 400
+
+        return install
+
+# TODO: GET OS List

@@ -31,7 +31,7 @@ class MacTable(Base):
         self.server_id = server_id
         self.mac_addr = mac_addr
 
-
+# TODO: Rename table to install_log, remove passwdhash from table
 class Install(Base):
     __tablename__ = 'installs'
     id = Column('id', Integer, primary_key=True)
@@ -40,18 +40,18 @@ class Install(Base):
     osver = Column(String(20), nullable=False)
     token = Column(String(32), nullable=False)
     ipaddr = Column(String(32), nullable=False)
-    passwdhash = Column(String(128), nullable=False) # mkpasswd -m sha-512 'пароль'
-    status = Column(Boolean, default=False) # 0 - устанавливается, 1 - завершена
+    # passwdhash = Column(String(128), nullable=False) # mkpasswd -m sha-512 'пароль'
+    status = Column(Integer, default=0) # 0 - устанавливается, 1 - завершена, 2 - отменена
     created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
     diskpart = Column(Integer, nullable=False, default=0)
 
-    def __init__(self, adman_id, os, osver, token, ipaddr, passwdhash, diskpart):
+    def __init__(self, adman_id, os, osver, token, ipaddr, diskpart):
         self.adman_id = adman_id
         self.os = os
         self.osver = osver
         self.token = token
         self.ipaddr = ipaddr
-        self.passwdhash = passwdhash
+        # self.passwdhash = passwdhash
         self.diskpart = diskpart
 
 
