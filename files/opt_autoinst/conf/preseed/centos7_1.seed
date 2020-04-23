@@ -1,0 +1,67 @@
+#version=DEVEL
+# System authorization information
+auth --enableshadow --passalgo=sha512
+# Use graphical install
+#graphical
+text
+# Run the Setup Agent on first boot
+firstboot --enable
+ignoredisk --only-use=sda,sdb
+# Keyboard layouts
+keyboard --vckeymap=us --xlayouts='us'
+# System language
+lang en_US.UTF-8
+
+# Network information
+network  --bootproto=static --gateway=__gateway__ --ip=__ipaddr__ --nameserver=8.8.8.8 --netmask=__netmask__ --noipv6 --activate
+network  --hostname=s__srv_name__
+
+# Use network installation
+url --url="http://mirror.adman.com/centos/7/os/x86_64"
+# Root password
+rootpw --iscrypted __passwdhash__
+# System services
+services --enabled="chronyd"
+# System timezone
+timezone Europe/Moscow --isUtc
+# System bootloader configuration
+bootloader --location=mbr --boot-drive=sda
+# Partition clearing information
+clearpart --all --initlabel --drives=sda,sdb
+# Disk partitioning information
+part raid.426 --fstype="mdmember" --ondisk=sda --size=2045
+part raid.589 --fstype="mdmember" --ondisk=sda --size=7813
+part raid.759 --fstype="mdmember" --ondisk=sda --size=10240 --grow
+part raid.432 --fstype="mdmember" --ondisk=sdb --size=2045
+part raid.583 --fstype="mdmember" --ondisk=sdb --size=7813
+part raid.765 --fstype="mdmember" --ondisk=sdb --size=10240 --grow
+raid swap --device=swap --fstype="swap" --level=RAID1 raid.583 raid.589
+raid /boot --device=boot --fstype="ext4" --level=RAID1 raid.426 raid.432
+raid / --device=root --fstype="xfs" --level=RAID1 raid.759 raid.765
+zerombr
+
+reboot --eject
+
+%packages
+@^minimal
+@core
+chrony
+vim
+%end
+
+%addon com_redhat_kdump --disable --reserve-mb='auto'
+
+%end
+
+%anaconda
+pwpolicy root --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+pwpolicy user --minlen=6 --minquality=1 --notstrict --nochanges --emptyok
+pwpolicy luks --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+%end
+
+%post --nochroot
+sed -i 's/PermitRootLogin/#PermitRootLogin/' /mnt/sysimage/etc/ssh/sshd_config && echo 'PermitRootLogin yes' >> /mnt/sysimage/etc/ssh/sshd_config;
+sed -i s/^SELINUX=.*$/SELINUX=disabled/ /mnt/sysimage/etc/selinux/config;
+wget --no-check-certificate https://install.adman.cloud/api/v1.0/install/complete/__srv_name__?token=__token__
+%end
+

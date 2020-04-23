@@ -1,0 +1,57 @@
+#version=DEVEL
+# System authorization information
+auth --enableshadow --passalgo=sha512
+# Use graphical install
+graphical
+# Run the Setup Agent on first boot
+firstboot --enable
+ignoredisk --only-use=sdb,sdc
+# Keyboard layouts
+keyboard --vckeymap=us --xlayouts='us'
+# System language
+lang en_US.UTF-8                                                                                                                                                                             
+                                                                                                                                                                                             
+# Network information                                                                                                                                                                        
+network  --bootproto=static --device=enp4s0 --gateway=109.248.222.1 --ip=109.248.222.111 --nameserver=8.8.8.8 --netmask=255.255.255.0 --noipv6 --activate                                    
+network  --hostname=s300                                                                                                                                                                     
+                                                                                                                                                                                             
+# Use network installation                                                                                                                                                                   
+url --url="http://mirror.adman.com/centos/7/os/x86_64"                                                                                                                                       
+# Root password                                                                                                                                                                              
+rootpw --iscrypted $6$ZESkC3HG2F33tIi7$y9m1NasLPpVTQnWdzUza0Ga.3nmqyHdXELDgjNltyWBvbFliP8cE7f.ZrbMzgbLyVpMaFF8OzYIZaT7v7YpV8.
+# System services
+services --enabled="chronyd"
+# System timezone
+timezone Europe/Moscow --isUtc
+# System bootloader configuration
+bootloader --location=mbr --boot-drive=sdc
+# Partition clearing information
+clearpart --all --initlabel --drives=sdc,sdb
+# Disk partitioning information
+part raid.426 --fstype="mdmember" --ondisk=sdb --size=2045
+part raid.589 --fstype="mdmember" --ondisk=sdb --size=7813
+part raid.759 --fstype="mdmember" --ondisk=sdc --size=944010
+part raid.432 --fstype="mdmember" --ondisk=sdc --size=2045
+part raid.583 --fstype="mdmember" --ondisk=sdc --size=7813
+part raid.765 --fstype="mdmember" --ondisk=sdb --size=944010
+raid swap --device=swap --fstype="swap" --level=RAID1 raid.583 raid.589
+raid /boot --device=boot --fstype="ext4" --level=RAID1 raid.426 raid.432
+raid / --device=root --fstype="xfs" --level=RAID1 raid.759 raid.765
+
+%packages
+@^minimal
+@core
+chrony
+
+%end
+
+%addon com_redhat_kdump --disable --reserve-mb='auto'
+
+%end
+
+%anaconda
+pwpolicy root --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+pwpolicy user --minlen=6 --minquality=1 --notstrict --nochanges --emptyok
+pwpolicy luks --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+%end
+

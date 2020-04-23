@@ -1,0 +1,10 @@
+#!/bin/sh
+exec tail -n +3 $0
+
+menuentry "Install Debian 9 server amd64" {
+    set bootdir="/images/debian/9/amd64"
+    set confdir="/boot/grub/conf.d/s__srv_name__"
+    linux (tftp)$bootdir/linux auto=true priority=critical url=tftp://10.0.222.1$confdir/s__srv_name__.seed DEBCONF_DEBUG=5 --- quiet
+    initrd (tftp)$bootdir/initrd.gz
+}
+
