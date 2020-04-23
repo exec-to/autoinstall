@@ -1,25 +1,29 @@
-#version=DEVEL
+#version=RHEL8
 # System authorization information
-auth --enableshadow --passalgo=sha512
+# auth --enableshadow --passalgo=sha512
 # Use graphical install
-#graphical
-text
+graphical
+#text
 # Run the Setup Agent on first boot
 firstboot --enable
-ignoredisk --only-use=sda,sdb
+ignoredisk --only-use=sda
 # Keyboard layouts
 keyboard --vckeymap=us --xlayouts='us'
 # System language
 lang en_US.UTF-8
 
 # Network information
-network  --bootproto=static --gateway=__gateway__ --ip=__ipaddr__ --nameserver=8.8.8.8 --netmask=__netmask__ --noipv6 --activate
+network  --bootproto=static --device=link --gateway=__gateway__ --ip=__ipaddr__ --nameserver=8.8.8.8 --netmask=__netmask__ --noipv6 --activate
 network  --hostname=s__srv_name__
 
+
+repo --name="AppStream" --baseurl=https://mirror.yandex.ru/centos/8/BaseOS/x86_64/os/../../../AppStream/x86_64/os/
 # Use network installation
-url --url="http://mirror.adman.com/centos/7/os/x86_64"
+url --url="https://mirror.yandex.ru/centos/8/BaseOS/x86_64/os"
 # Root password
 rootpw --iscrypted __passwdhash__
+# Do not configure the X Window System
+skipx
 # System services
 services --enabled="chronyd"
 # System timezone
@@ -27,24 +31,18 @@ timezone Europe/Moscow --isUtc
 # System bootloader configuration
 bootloader --location=mbr --boot-drive=sda
 # Partition clearing information
-clearpart --all --initlabel --drives=sda,sdb
+clearpart --all --initlabel --drives=sda
 # Disk partitioning information
-part raid.426 --fstype="mdmember" --ondisk=sda --size=2045
-part raid.589 --fstype="mdmember" --ondisk=sda --size=7813
-part raid.759 --fstype="mdmember" --ondisk=sda --size=10240 --grow
-part raid.432 --fstype="mdmember" --ondisk=sdb --size=2045
-part raid.583 --fstype="mdmember" --ondisk=sdb --size=7813
-part raid.765 --fstype="mdmember" --ondisk=sdb --size=10240 --grow
-raid swap --device=swap --fstype="swap" --level=RAID1 raid.583 raid.589
-raid /boot --device=boot --fstype="ext4" --level=RAID1 raid.426 raid.432
-raid / --device=root --fstype="xfs" --level=RAID1 raid.759 raid.765
+part / --fstype="xfs" --ondisk=sda --size=10240 --grow
+part swap --fstype="swap" --ondisk=sda --size=7809
+part /boot --fstype="ext4" --ondisk=sda --size=2044
 zerombr
+
 
 reboot --eject
 
 %packages
-@^minimal
-@core
+@^minimal-environment
 chrony
 vim
 %end
