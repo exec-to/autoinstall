@@ -186,4 +186,4 @@ class ServerConfigure(Resource):
             api.logger.error(msg)
             abort(400, message=msg, success=False)
 
-        return {"success": True}
+        return {"success": True} 
