@@ -68,12 +68,12 @@ class InstallRun(Resource):
             os = request.json['os'].lower()
             osver = request.json['osver'].lower()
 
-            args = request.json
-            args['token'] = token
+            # api.logger.debug('req: {}'.format(request.json))
+            # api.logger.debug('args: {}'.format(args))
 
-            Utils.create_config(args, adman_id)
+            Utils.create_config(request.json, adman_id, token)
             if 'windows' in os:
-                Utils.create_install_bat(args, adman_id)
+                Utils.create_install_bat(request.json, adman_id)
 
             # api.logger.debug('req: {}'.format(request.json))
 
@@ -216,7 +216,7 @@ class InstallBreak(Resource):
         return {"success": True}
 
 
-@api.route('/break/<int:adman_id>', endpoint='server_install_prestart_ep')
+@api.route('/prestart/<int:adman_id>', endpoint='server_install_prestart_ep')
 class InstallPrestart(Resource):
     @api.doc(params={
         'adman_id': 'ID сервера в оборудовании adman',

@@ -31,7 +31,7 @@ class Utils(object):
 
     @staticmethod
     def create_preseed_conf(adman_id, params, token):
-
+        # TODO: Copy windows preseed to share dir (Mount conf share /boot/conf.d/srv_name/)
         preseed_template = '{preseeddir}/{os}{osver}_{diskpart}.seed'.format(
             preseeddir=config.utils['preseed-directory'],
             os=params['os'].lower(),
@@ -109,14 +109,11 @@ class Utils(object):
         return output
 
     @staticmethod
-    def create_config(args, adman_id):
+    def create_config(args, adman_id, token=''):
         ipxe_config = '{confdir}/s{srv}/boot.ipxe'.format(
             confdir=config.utils['config-directory'],
             srv=adman_id
         )
-
-        # if os.path.exists(ipxe_config):
-        #     return
 
         tpl_key = "{os}_{osver}".format(os = args['os'].lower(), osver = args['osver'].lower())
         tpl = config.templates[tpl_key]
@@ -132,8 +129,7 @@ class Utils(object):
         # Replace the target string
         filedata = filedata.replace('__srv_name__', str(adman_id))
         filedata = filedata.replace('__boot_url__', str(config.utils['boot_url']))
-        if hasattr(args, 'token'):
-            filedata = filedata.replace('__token__', str(args['token']))
+        filedata = filedata.replace('__token__', str(token))
 
         # Write the file out again
         with open(ipxe_config, 'w') as file:
@@ -153,8 +149,8 @@ class Utils(object):
         with open(bat_config, 'a') as file:
             file.truncate(0)
             file.write('wpeinit\n')
-            file.write('net use j: \\__boot_host__\images\__os_ver__\amd64\n')
-            file.write('j:\setup.exe /unattend:j:\s__srv_name__.xml\n')
+            file.write('net use j: \\\\__boot_host__\\images\\__os_ver__\\amd64\n')
+            file.write('j:\\setup.exe /unattend:j:\\s__srv_name__.seed\n')
 
         # Read in the file
         with open(bat_config, 'r') as file:
