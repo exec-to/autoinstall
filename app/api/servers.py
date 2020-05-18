@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy_filters import apply_filters
 from flask import url_for, request, jsonify
 from app import core as CoreLib
-from app.core.grub import Grub
+from app.core.utils import Utils
 
 api = Namespace('servers', description='Раздел: операции с серверами')
 core = CoreLib.Core()
@@ -141,7 +141,7 @@ class ServerConfigure(Resource):
                 msg = 'Сервер находится в режиме обслуживания. Внесение настроек заблокировано.'
                 abort(400, message=msg, success=False)
 
-            Grub.create_server_dir(server.adman_id)
+            Utils.create_server_dir(server.adman_id)
 
             # Проверяем, используются ли MAC-адреса другими серверами
             for item in request.json:
@@ -168,7 +168,7 @@ class ServerConfigure(Resource):
 
             for mac in macs:
                 api.logger.debug("mac: {}".format(mac.mac_addr))
-                Grub.remove_symbol_link(mac.mac_addr)
+                Utils.remove_symbol_link(mac.mac_addr)
                 session.delete(mac)
 
             session.commit()
@@ -177,9 +177,13 @@ class ServerConfigure(Resource):
             for item in request.json:
                 macaddr = CoreLib.MacTable(server_id=server.id, mac_addr=item['mac_addr'].lower())
                 session.add(macaddr)
-                Grub.create_symbol_link(server.adman_id, item['mac_addr'].lower())
+                Utils.create_symbol_link(server.adman_id, item['mac_addr'].lower())
 
             session.commit()
+
+            #Создаём начальный конфиг
+            args = {'os': 'local', 'osver': '0'}
+            Utils.create_config(args, server.adman_id)
 
         except Exception as e:
             msg = 'Не удаётся настроить сервер. Ошибка: {}'.format(str(e))

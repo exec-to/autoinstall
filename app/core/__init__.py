@@ -61,7 +61,7 @@ class Core:
             'mysql+mysqlconnector://{user}:{passwd}@{host}:{port}/{db}'
             .format_map(config.database),
             echo=False,
-            connect_args={'connect_timeout': 10},
+            connect_args={'connect_timeout': 3600},
 	    pool_recycle=300
         )
 

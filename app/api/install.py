@@ -5,7 +5,6 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy_filters import apply_filters
 from flask import url_for, request, jsonify
 from app import core as CoreLib
-from app.core.grub import Grub
 from app.core.utils import Utils
 
 api = Namespace('install', description='Раздел: операции установки ОС')
@@ -63,9 +62,7 @@ class InstallRun(Resource):
                 msg = 'Сервер уже находится в режиме обслуживания. Дождитесь завершения операций.'
                 raise Exception('MaitenanceMode', msg)
 
-            Grub.update_template(request.json)
-            # api.logger.debug('req: {}'.format(request.json))
-            Grub.mkconfig(adman_id)
+            Utils.create_config(request.json, adman_id)
 
             token = Utils.get_token()
             ipaddr = request.json['ipaddr']
@@ -139,8 +136,7 @@ class InstallComplete(Resource):
                 raise Exception('AlreadyBreak',
                                 'Операция уже была отменена ранее.')
 
-            Grub.update_template(args)
-            Grub.mkconfig(adman_id)
+            Utils.create_config(args, adman_id)
 
             install.status = 1
             server.maintenance = False
@@ -200,8 +196,7 @@ class InstallBreak(Resource):
                 raise Exception('AlreadyBreak',
                                 'Операция отмены уже была завершена ранее.')
 
-            Grub.update_template(args)
-            Grub.mkconfig(adman_id)
+            Utils.create_config(args, adman_id)
 
             install.status = 2
             server.maintenance = False

@@ -33,14 +33,14 @@ class Utils(object):
     def create_preseed_conf(adman_id, params, token):
 
         preseed_template = '{preseeddir}/{os}{osver}_{diskpart}.seed'.format(
-            preseeddir=config.grub['preseed-directory'],
+            preseeddir=config.utils['preseed-directory'],
             os=params['os'].lower(),
             osver=params['osver'].lower(),
             diskpart=params['diskpart'].lower()
         )
 
         preseed_config = '{confdir}/s{srv}/s{srv}.seed'.format(
-            confdir=config.grub['config-directory'],
+            confdir=config.utils['config-directory'],
             srv=adman_id
         )
 
@@ -73,3 +73,70 @@ class Utils(object):
             file.write(filedata)
 
         os.chmod(preseed_config, 436)
+
+    @staticmethod
+    def create_server_dir(server_id):
+        create_cmd = "/bin/mkdir {dir}/s{server_id}".format(
+            dir=config.utils['config-directory'],
+            server_id=server_id
+        )
+
+        stream = os.popen(create_cmd)
+        output = stream.read()
+        return output
+
+    @staticmethod
+    def remove_symbol_link(link):
+        rm_cmd = "/bin/rm -f {dir}/{link}".format(
+            dir = config.utils['config-directory'],
+            link=link
+        )
+
+        stream = os.popen(rm_cmd)
+        output = stream.read()
+        return output
+
+    @staticmethod
+    def create_symbol_link(server_id, link):
+        os.chdir(config.utils['config-directory'])
+        create_cmd = "/bin/ln -s s{server_id} {link}".format(
+            server_id=server_id,
+            link=link
+        )
+
+        stream = os.popen(create_cmd)
+        output = stream.read()
+        return output
+
+    @staticmethod
+    def create_config(args, adman_id):
+        ipxe_config = '{confdir}/s{srv}/boot.ipxe'.format(
+            confdir=config.utils['config-directory'],
+            srv=adman_id
+        )
+
+        # if os.path.exists(ipxe_config):
+        #     return
+
+        tpl_key = "{os}_{osver}".format(os = args['os'].lower(), osver = args['osver'].lower())
+        tpl = config.templates[tpl_key]
+
+        with open(ipxe_config, 'a') as file:
+            file.truncate(0)
+            file.writelines(tpl)
+
+        # Read in the file
+        with open(ipxe_config, 'r') as file:
+            filedata = file.read()
+
+        # Replace the target string
+        filedata = filedata.replace('__srv_name__', str(adman_id))
+        filedata = filedata.replace('__boot_url__', str(config.utils['boot_url']))
+
+        # Write the file out again
+        with open(ipxe_config, 'w') as file:
+            file.write(filedata)
+
+        os.chmod(ipxe_config, 436)
+
+        # return output

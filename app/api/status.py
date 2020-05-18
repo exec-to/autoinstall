@@ -5,7 +5,6 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy_filters import apply_filters
 from flask import url_for, request, jsonify
 from app import core as CoreLib
-from app.core.grub import Grub
 from app.core.utils import Utils
 
 api = Namespace('status', description='Раздел: Статус системы')
