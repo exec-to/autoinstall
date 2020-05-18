@@ -62,15 +62,20 @@ class InstallRun(Resource):
                 msg = 'Сервер уже находится в режиме обслуживания. Дождитесь завершения операций.'
                 raise Exception('MaitenanceMode', msg)
 
-            Utils.create_config(request.json, adman_id)
-
             token = Utils.get_token()
             ipaddr = request.json['ipaddr']
             diskpart = request.json['diskpart']
-            os = request.json['os']
-            osver = request.json['osver']
+            os = request.json['os'].lower()
+            osver = request.json['osver'].lower()
 
-            api.logger.debug('req: {}'.format(request.json))
+            args = request.json
+            args['token'] = token
+
+            Utils.create_config(args, adman_id)
+            if 'windows' in os:
+                Utils.create_install_bat(args, adman_id)
+
+            # api.logger.debug('req: {}'.format(request.json))
 
             install = CoreLib.Install(adman_id, os, osver, token, ipaddr, diskpart)
             session.add(install)
@@ -149,6 +154,7 @@ class InstallComplete(Resource):
 
         return {"success": True}
 
+
 @api.route('/break/<int:adman_id>', endpoint='server_install_break_ep')
 class InstallBreak(Resource):
     @api.doc(params={
@@ -204,6 +210,66 @@ class InstallBreak(Resource):
 
         except Exception as e:
             msg = 'Не удалось выполнить запрос на отмену установки ОС. Ошибка: {}'.format(str(e))
+            api.logger.error(msg)
+            return {"message": msg, "success": False}, 400
+
+        return {"success": True}
+
+
+@api.route('/break/<int:adman_id>', endpoint='server_install_prestart_ep')
+class InstallPrestart(Resource):
+    @api.doc(params={
+        'adman_id': 'ID сервера в оборудовании adman',
+        'token': 'Токен установки, генерируется при инициализации установки'
+    })
+    @api.doc(security='querykey')
+    def get(self, adman_id):
+        """
+        Сообщить о запуске установки ОС
+        """
+        args = {'os': 'local', 'osver': '0'}
+
+        session = None
+
+        try:
+            session = sessionmaker(bind=core.engine)()
+        except Exception as e:
+            msg = 'Не удаётся инициализировать соединение с БД: {}'.format(str(e))
+            api.logger.error(msg)
+            abort(500, message=msg, success=False)
+
+        try:
+            server = session.query(CoreLib.Server).filter_by(adman_id=adman_id).first()
+            if server is None:
+                raise Exception('NotFound', 'Не найден сервер c ID: {}. Обновите сначала его конфигурацию.'.format(adman_id))
+
+            # Проверить токен
+            filters = [
+                {'field': 'adman_id', 'op': '==', 'value': adman_id},
+                {'field': 'token', 'op': '==', 'value': request.args.get('token')}
+            ]
+            install = session.query(CoreLib.Install)
+            install = apply_filters(install, filters).first()
+
+            if install is None:
+                raise Exception('Unauthorized',
+                                'Для выполнения операции требуется авторизация по токену.')
+
+            if install.status == 1:
+                raise Exception('AlreadyComplete',
+                                'Установка уже была успешно завершена ранее.')
+
+            if install.status == 2:
+                raise Exception('AlreadyBreak',
+                                'Установка уже была отменена ранее.')
+
+            Utils.create_config(args, adman_id)
+
+            install.status = 3
+            session.commit()
+
+        except Exception as e:
+            msg = 'Не удалось выполнить запрос на изменение конфигурации установки ОС (Pre start). Ошибка: {}'.format(str(e))
             api.logger.error(msg)
             return {"message": msg, "success": False}, 400
 

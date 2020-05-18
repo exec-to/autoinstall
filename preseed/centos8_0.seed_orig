@@ -1,0 +1,47 @@
+#version=RHEL8
+ignoredisk --only-use=sda
+# Partition clearing information
+clearpart --none --initlabel
+# Use graphical install
+graphical
+repo --name="AppStream" --baseurl=https://mirror.yandex.ru/centos/8/BaseOS/x86_64/os/../../../AppStream/x86_64/os/
+# Use network installation
+url --url="https://mirror.yandex.ru/centos/8/BaseOS/x86_64/os"
+# Keyboard layouts
+keyboard --vckeymap=us --xlayouts='us'
+# System language
+lang en_US.UTF-8
+
+# Network information
+network  --bootproto=static --device=enp4s0 --gateway=109.248.222.1 --ip=109.248.222.111 --nameserver=8.8.8.8 --netmask=255.255.255.0 --noipv6 --activate
+network  --hostname=s300
+# Root password
+rootpw --iscrypted $6$j4Mua6S0bs/AQlMf$YdC9hLSw.MnNIS5fVmAlvti2frbj3W/RBVEnJTiEjDMZRfV5vDk5nvNGmj2McNiLkM.7Wo.xZu.vojr.zH3bp1
+# Run the Setup Agent on first boot
+firstboot --enable
+# Do not configure the X Window System
+skipx
+# System services
+services --enabled="chronyd"
+# System timezone
+timezone Europe/Moscow --isUtc
+# Disk partitioning information
+part swap --fstype="swap" --ondisk=sda --size=7809
+part /boot --fstype="ext4" --ondisk=sda --size=1024
+part / --fstype="xfs" --ondisk=sda --size=945035
+
+%packages
+@^minimal-environment
+
+%end
+
+%addon com_redhat_kdump --disable --reserve-mb='auto'
+
+%end
+
+%anaconda
+pwpolicy root --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+pwpolicy user --minlen=6 --minquality=1 --notstrict --nochanges --emptyok
+pwpolicy luks --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+%end
+

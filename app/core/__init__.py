@@ -41,7 +41,8 @@ class Install(Base):
     token = Column(String(32), nullable=False)
     ipaddr = Column(String(32), nullable=False)
     # passwdhash = Column(String(128), nullable=False) # mkpasswd -m sha-512 'пароль'
-    status = Column(Integer, default=0) # 0 - устанавливается, 1 - завершена, 2 - отменена
+    status = Column(Integer, default=0)
+    # 0 - устанавливается, 1 - завершена, 2 - отменена, 3 - запуск установки (для Windows)
     created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
     diskpart = Column(Integer, nullable=False, default=0)
 

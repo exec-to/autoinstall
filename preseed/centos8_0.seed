@@ -1,0 +1,65 @@
+#version=RHEL8
+# System authorization information
+# auth --enableshadow --passalgo=sha512
+# Use graphical install
+graphical
+#text
+# Run the Setup Agent on first boot
+firstboot --enable
+ignoredisk --only-use=sda
+# Keyboard layouts
+keyboard --vckeymap=us --xlayouts='us'
+# System language
+lang en_US.UTF-8
+
+# Network information
+network  --bootproto=static --device=link --gateway=__gateway__ --ip=__ipaddr__ --nameserver=8.8.8.8 --netmask=__netmask__ --noipv6 --activate
+network  --hostname=s__srv_name__
+
+
+repo --name="AppStream" --baseurl=https://mirror.yandex.ru/centos/8/BaseOS/x86_64/os/../../../AppStream/x86_64/os/
+# Use network installation
+url --url="https://mirror.yandex.ru/centos/8/BaseOS/x86_64/os"
+# Root password
+rootpw --iscrypted __passwdhash__
+# Do not configure the X Window System
+skipx
+# System services
+services --enabled="chronyd"
+# System timezone
+timezone Europe/Moscow --isUtc
+# System bootloader configuration
+bootloader --location=mbr --boot-drive=sda
+# Partition clearing information
+clearpart --all --initlabel --drives=sda
+# Disk partitioning information
+part / --fstype="xfs" --ondisk=sda --size=10240 --grow
+part swap --fstype="swap" --ondisk=sda --size=7809
+part /boot --fstype="ext4" --ondisk=sda --size=2044
+zerombr
+
+
+reboot --eject
+
+%packages
+@^minimal-environment
+chrony
+vim
+%end
+
+%addon com_redhat_kdump --disable --reserve-mb='auto'
+
+%end
+
+%anaconda
+pwpolicy root --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+pwpolicy user --minlen=6 --minquality=1 --notstrict --nochanges --emptyok
+pwpolicy luks --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+%end
+
+%post --nochroot
+sed -i 's/PermitRootLogin/#PermitRootLogin/' /mnt/sysimage/etc/ssh/sshd_config && echo 'PermitRootLogin yes' >> /mnt/sysimage/etc/ssh/sshd_config;
+sed -i s/^SELINUX=.*$/SELINUX=disabled/ /mnt/sysimage/etc/selinux/config;
+wget --no-check-certificate https://install.adman.cloud/api/v1.0/install/complete/__srv_name__?token=__token__
+%end
+

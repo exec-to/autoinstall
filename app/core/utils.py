@@ -132,6 +132,8 @@ class Utils(object):
         # Replace the target string
         filedata = filedata.replace('__srv_name__', str(adman_id))
         filedata = filedata.replace('__boot_url__', str(config.utils['boot_url']))
+        if hasattr(args, 'token'):
+            filedata = filedata.replace('__token__', str(args['token']))
 
         # Write the file out again
         with open(ipxe_config, 'w') as file:
@@ -139,4 +141,32 @@ class Utils(object):
 
         os.chmod(ipxe_config, 436)
 
-        # return output
+    @staticmethod
+    def create_install_bat(args, adman_id):
+        bat_config = '{confdir}/s{srv}/install.bat'.format(
+            confdir=config.utils['config-directory'],
+            srv=adman_id
+        )
+
+        osver = args['osver'].lower()
+
+        with open(bat_config, 'a') as file:
+            file.truncate(0)
+            file.write('wpeinit\n')
+            file.write('net use j: \\__boot_host__\images\__os_ver__\amd64\n')
+            file.write('j:\setup.exe /unattend:j:\s__srv_name__.xml\n')
+
+        # Read in the file
+        with open(bat_config, 'r') as file:
+            filedata = file.read()
+
+        # Replace the target string
+        filedata = filedata.replace('__srv_name__', str(adman_id))
+        filedata = filedata.replace('__os_ver__', str(osver))
+        filedata = filedata.replace('__boot_host__', str(config.utils['boot_host']))
+
+        # Write the file out again
+        with open(bat_config, 'w') as file:
+            file.write(filedata)
+
+        os.chmod(bat_config, 436)
