@@ -149,8 +149,10 @@ class Utils(object):
         with open(bat_config, 'a') as file:
             file.truncate(0)
             file.write('wpeinit\n')
+            # TODO: fix backslash in path
             file.write('net use j: \\\\__boot_host__\\images\\__os_ver__\\amd64\n')
-            file.write('j:\\setup.exe /unattend:j:\\s__srv_name__.seed\n')
+            file.write('net use k: \\\\__boot_host__\\configfile\n')
+            file.write('j:\\setup.exe /unattend:k:\\s__srv_name__\\s__srv_name__.seed\n')
 
         # Read in the file
         with open(bat_config, 'r') as file:
@@ -166,3 +168,23 @@ class Utils(object):
             file.write(filedata)
 
         os.chmod(bat_config, 436)
+
+    @staticmethod
+    def remove_install_bat(adman_id):
+        bat_config = '{confdir}/s{srv}/install.bat'.format(
+            confdir=config.utils['config-directory'],
+            srv=adman_id
+        )
+
+        if os.path.exists(bat_config):
+            os.remove(bat_config)
+
+    @staticmethod
+    def remove_preseed_conf(adman_id):
+        preseed_config = '{confdir}/s{srv}/s{srv}.seed'.format(
+            confdir=config.utils['config-directory'],
+            srv=adman_id
+        )
+
+        if os.path.exists(preseed_config):
+            os.remove(preseed_config)

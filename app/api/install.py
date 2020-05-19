@@ -142,6 +142,8 @@ class InstallComplete(Resource):
                                 'Операция уже была отменена ранее.')
 
             Utils.create_config(args, adman_id)
+            Utils.remove_preseed_conf(adman_id)
+            Utils.remove_install_bat(adman_id)
 
             install.status = 1
             server.maintenance = False
@@ -203,6 +205,8 @@ class InstallBreak(Resource):
                                 'Операция отмены уже была завершена ранее.')
 
             Utils.create_config(args, adman_id)
+            Utils.remove_preseed_conf(adman_id)
+            Utils.remove_install_bat(adman_id)
 
             install.status = 2
             server.maintenance = False

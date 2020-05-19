@@ -1,0 +1,15 @@
+ipset create smb_clients hash:mac timeout 3600
+cron jobs
+# add clients
+
+* * * * * /usr/bin/mysql -D aidb -BNe \
+'select mac_addr \
+  from servers join mac_addr \
+  on mac_addr.server_id = servers.id \
+  where servers.maintenance = 1;' | \
+/usr/bin/xargs -i /bin/sh -c "/sbin/ipset -q add smb_clients {} timeout 3600";
+
+iptables -N SAMBA_RULES
+iptables -A INPUT -p tcp -m multiport --dports 139,445 -j SAMBA_RULES
+iptables -A SAMBA_RULES -m set --match-set smb_clients src -j ACCEPT
+iptables -A SAMBA_RULES -j DROP
