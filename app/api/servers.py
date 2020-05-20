@@ -82,7 +82,7 @@ class ServerList(Resource):
         if auth != config.auth['adman']:
             api.logger.debug('Unauthorized, 401')
             abort(401, success=False)
-        try:
+        try: 
             session = sessionmaker(bind=core.engine)()
         except Exception as e:
             msg = 'Не удаётся инициализировать соединение с БД: {}'.format(str(e))
