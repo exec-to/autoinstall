@@ -3,13 +3,13 @@
     <settings pass="windowsPE">
         <component xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <SetupUILanguage>
-                <UILanguage>en-US</UILanguage>
+                <UILanguage>ru-RU</UILanguage>
             </SetupUILanguage>
-            <InputLocale>en-US</InputLocale>
-            <SystemLocale>en-US</SystemLocale>
-            <UILanguage>en-US</UILanguage>
-            <UILanguageFallback>en-US</UILanguageFallback>
-            <UserLocale>en-US</UserLocale>
+            <InputLocale>en-US;ru-RU</InputLocale>
+            <SystemLocale>ru-RU</SystemLocale>
+            <UILanguage>ru-RU</UILanguage>
+            <UILanguageFallback>ru-RU</UILanguageFallback>
+            <UserLocale>ru-RU</UserLocale>
         </component>
         <component xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Microsoft-Windows-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <DiskConfiguration>
@@ -51,7 +51,7 @@
                     <InstallFrom>
                         <MetaData wcm:action="add">
                             <Key>/IMAGE/NAME </Key>
-                            <Value>Windows Server 2012 R2 SERVERSTANDARD</Value>
+                            <Value>Windows Server 2012 R2 SERVERDATACENTER</Value>
                         </MetaData>
                     </InstallFrom>
                     <InstallTo>
@@ -110,7 +110,7 @@
             <FirewallGroups>
                 <FirewallGroup wcm:action="add" wcm:keyValue="RemoteDesktop">
                     <Active>true</Active>
-                    <Group>Remote Desktop</Group>
+                    <Group>@FirewallAPI.dll,-28752</Group>
                     <Profile>all</Profile>
                 </FirewallGroup>
             </FirewallGroups>
@@ -124,7 +124,7 @@
 			</RunSynchronousCommand>
 			<RunSynchronousCommand wcm:action="add">
 			  <Order>5</Order>
-			  <Path>netsh interface ipv4 set address name="Ethernet" source=static addr=109.248.222.111 mask=255.255.255.0 gateway=109.248.222.1 gwmetric=1</Path>
+			  <Path>netsh interface ipv4 set address name="Ethernet" source=static addr=__ipaddr__ mask=__netmask__ gateway=__gateway__ gwmetric=1</Path>
 			</RunSynchronousCommand>
 			<RunSynchronousCommand wcm:action="add">
 			  <Order>7</Order>
@@ -133,7 +133,7 @@
 			<!-- SET COMPLETE STATE -->
 			<RunSynchronousCommand wcm:action="add">
 			  <Order>9</Order>
-			  <Path>powershell -NoLogo -Command "Invoke-WebRequest -Uri 'https://install.adman.cloud/api/v1.0/' -OutFile C:\Windows\Temp\temp_url"</Path>
+			  <Path>powershell -NoLogo -Command "Invoke-WebRequest -Uri 'https://install.adman.cloud/api/v1.0/install/complete/__srv_name__?token=__token__' -OutFile C:\Windows\Temp\temp_url"</Path>
 			</RunSynchronousCommand>
 		  </RunSynchronous>
 		</component>
@@ -151,13 +151,13 @@
             </OOBE>
             <UserAccounts>
                 <AdministratorPassword>
-                    <Value>__password__</Value>
+                    <Value>__passwdhash__</Value>
                     <PlainText>true</PlainText>
                 </AdministratorPassword>
             </UserAccounts>
             <RegisteredOwner/>
         </component>
     </settings>
-    <cpi:offlineImage xmlns:cpi="urn:schemas-microsoft-com:cpi" cpi:source="wim:c:/wim/install.wim#Windows Server 2012 R2 SERVERSTANDARD"/>
+    <cpi:offlineImage xmlns:cpi="urn:schemas-microsoft-com:cpi" cpi:source="wim:c:/wim/install.wim#Windows Server 2012 R2 SERVERDATACENTER"/>
 </unattend>
 

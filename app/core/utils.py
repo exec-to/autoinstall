@@ -31,7 +31,6 @@ class Utils(object):
 
     @staticmethod
     def create_preseed_conf(adman_id, params, token):
-        # TODO: Copy windows preseed to share dir (Mount conf share /boot/conf.d/srv_name/)
         preseed_template = '{preseeddir}/{os}{osver}_{diskpart}.seed'.format(
             preseeddir=config.utils['preseed-directory'],
             os=params['os'].lower(),
@@ -149,7 +148,6 @@ class Utils(object):
         with open(bat_config, 'a') as file:
             file.truncate(0)
             file.write('wpeinit\n')
-            # TODO: fix backslash in path
             file.write('net use j: \\\\__boot_host__\\images\\__os_ver__\\amd64\n')
             file.write('net use k: \\\\__boot_host__\\configfile\n')
             file.write('j:\\setup.exe /unattend:k:\\s__srv_name__\\s__srv_name__.seed\n')
