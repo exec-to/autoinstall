@@ -31,7 +31,6 @@ class MacTable(Base):
         self.server_id = server_id
         self.mac_addr = mac_addr
 
-# TODO: Rename table to install_log, remove passwdhash from table
 class Install(Base):
     __tablename__ = 'installs'
     id = Column('id', Integer, primary_key=True)

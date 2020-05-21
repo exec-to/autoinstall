@@ -359,5 +359,3 @@ class Install(Resource):
             return {"message": msg, "success": False}, 400
 
         return install
-
-# TODO: GET OS List
