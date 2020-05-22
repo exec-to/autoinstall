@@ -132,11 +132,11 @@
 			</RunSynchronousCommand>
 			<RunSynchronousCommand wcm:action="add">
 			  <Order>5</Order>
-			  <Path>netsh interface ipv4 set address name="Подключение по локальной сети 2" source=static addr=__ipaddr__ mask=__netmask__ gateway=__gateway__ gwmetric=1</Path>
+			  <Path>netsh interface ipv4 set address name="Подключение по локальной сети" source=static addr=__ipaddr__ mask=__netmask__ gateway=__gateway__ gwmetric=1</Path>
 			</RunSynchronousCommand>
 			<RunSynchronousCommand wcm:action="add">
 			  <Order>6</Order>
-			  <Path>netsh interface ipv4 add dns "Подключение по локальной сети 2" 8.8.8.8 index=1</Path>
+			  <Path>netsh interface ipv4 add dns "Подключение по локальной сети" 8.8.8.8 index=1</Path>
 			</RunSynchronousCommand>
 			<!-- SET COMPLETE STATE -->
 			<RunSynchronousCommand wcm:action="add">

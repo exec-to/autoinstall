@@ -131,7 +131,7 @@
 			<!-- SET COMPLETE STATE -->
 			<RunSynchronousCommand wcm:action="add">
 			  <Order>9</Order>
-			  <Path>powershell -NoLogo -Command "Invoke-WebRequest -Uri 'https://install.adman.cloud/api/v1.0/install/complete/__srv_name__?token=__token__' -OutFile C:\Windows\Temp\temp_url"</Path>
+			  <Path>powershell -NoLogo -Command "Invoke-WebRequest -Uri 'http://install.adman.cloud/api/v1.0/install/complete/__srv_name__?token=__token__' -OutFile C:\Windows\Temp\temp_url"</Path>
 			</RunSynchronousCommand>
 		  </RunSynchronous>
 		</component>

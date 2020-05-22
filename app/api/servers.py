@@ -130,7 +130,7 @@ class ServerConfigure(Resource):
             abort(500, message=msg, success=False)
 
         server = None
-        try: 
+        try:
             server = session.query(CoreLib.Server).filter_by(adman_id=adman_id).first()
             if server is None:
                 server = CoreLib.Server(adman_id=adman_id)
