@@ -89,7 +89,7 @@
         <component name="Networking-MPSSVC-Svc" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <FirewallGroups>
                 <FirewallGroup wcm:action="add" wcm:keyValue="RemoteDesktop">
-                    <Group>Remote Desktop</Group>
+                    <Group>@FirewallAPI.dll,-28752</Group>
                     <Profile>all</Profile>
                     <Active>true</Active>
                 </FirewallGroup>
@@ -131,16 +131,15 @@
 			</RunSynchronousCommand>
 			<RunSynchronousCommand wcm:action="add">
 			  <Order>5</Order>
-			  <Path>netsh interface ipv4 set address name="Local Area Connection" source=static addr=__ipaddr__ mask=__netmask__ gateway=__gateway__ gwmetric=1</Path>
+			  <Path>net use x: \\__boot_host__\configfile /user:user pass</Path>
 			</RunSynchronousCommand>
 			<RunSynchronousCommand wcm:action="add">
 			  <Order>6</Order>
-			  <Path>netsh interface ipv4 add dns "Local Area Connection" 8.8.8.8 index=1</Path>
+			  <Path>xcopy "x:\SetupComplete.cmd" %WINDIR%\Setup\Scripts\SetupComplete.cmd*</Path>
 			</RunSynchronousCommand>
-			<!-- SET COMPLETE STATE -->
 			<RunSynchronousCommand wcm:action="add">
-			  <Order>7</Order>
-			  <Path>powershell -NoLogo -Command "[System.Net.WebRequest]::Create('http://install.adman.cloud/api/v1.0/install/complete/__srv_name__?token=__token__').GetResponse()"</Path>
+			  <Order>8</Order>
+			  <Path>xcopy "x:\s307\set-ip.ps1" %WINDIR%\Setup\Scripts\set-ip.ps1*</Path>
 			</RunSynchronousCommand>
 		  </RunSynchronous>
 		</component>

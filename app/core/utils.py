@@ -66,6 +66,7 @@ class Utils(object):
         filedata = filedata.replace('__srv_name__', str(adman_id))
         filedata = filedata.replace('__passwdhash__', str(params['passwdhash']))
         filedata = filedata.replace('__token__', str(token))
+        filedata = filedata.replace('__boot_host__', str(config.utils['boot_host']))
 
         # Write the file out again
         with open(preseed_config, 'w') as file:
@@ -168,6 +169,40 @@ class Utils(object):
         os.chmod(bat_config, 436)
 
     @staticmethod
+    def create_win_set_ip_ps(ipaddr, token, adman_id):
+        ps_config = '{confdir}/s{srv}/set-ip.ps1'.format(
+            confdir=config.utils['config-directory'],
+            srv=adman_id
+        )
+
+        with open(ps_config, 'a') as file:
+            file.truncate(0)
+            file.write('$ifaceindex = get-wmiobject win32_networkadapter -filter "netconnectionstatus = 2" | select -expand InterfaceIndex; ')
+            file.write('netsh interface ipv4 set address name=$ifaceindex source=static addr=__ip_addr__  mask=__netmask__ gateway=__gateway__ gwmetric=1; ')
+            file.write('netsh interface ipv4 add dns $ifaceindex 8.8.8.8 index=1; ')
+            file.write('ping 8.8.8.8; ')
+            file.write('[System.Net.WebRequest]::Create("http://install.adman.cloud/api/v1.0/install/complete/__srv_name__?token=__token__").GetResponse(); ')
+
+        gateway, netmask = Utils.get_network_settings(ipaddr)
+        # Read in the file
+        with open(ps_config, 'r') as file:
+            filedata = file.read()
+
+        # Replace the target string
+        filedata = filedata.replace('__ip_addr__', str(ipaddr))
+        filedata = filedata.replace('__netmask__', netmask)
+        filedata = filedata.replace('__gateway__', gateway)
+        filedata = filedata.replace('__srv_name__', str(adman_id))
+        filedata = filedata.replace('__token__', token)
+
+        # Write the file out again
+        with open(ps_config, 'w') as file:
+            file.write(filedata)
+
+        os.chmod(ps_config, 436)
+
+
+    @staticmethod
     def remove_install_bat(adman_id):
         bat_config = '{confdir}/s{srv}/install.bat'.format(
             confdir=config.utils['config-directory'],
@@ -186,3 +221,14 @@ class Utils(object):
 
         if os.path.exists(preseed_config):
             os.remove(preseed_config)
+
+
+    @staticmethod
+    def remove_win_set_ip_ps(adman_id):
+        ps_config = '{confdir}/s{srv}/set-ip.ps1'.format(
+            confdir=config.utils['config-directory'],
+            srv=adman_id
+        )
+
+        if os.path.exists(ps_config):
+            os.remove(ps_config)

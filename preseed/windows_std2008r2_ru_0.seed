@@ -95,7 +95,6 @@
                 </FirewallGroup>
             </FirewallGroups>
         </component>
-
         <component xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Microsoft-Windows-Security-SPP-UX" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <SkipAutoActivation>true</SkipAutoActivation>
         </component>
@@ -132,16 +131,15 @@
 			</RunSynchronousCommand>
 			<RunSynchronousCommand wcm:action="add">
 			  <Order>5</Order>
-			  <Path>netsh interface ipv4 set address name="Подключение по локальной сети" source=static addr=__ipaddr__ mask=__netmask__ gateway=__gateway__ gwmetric=1</Path>
+			  <Path>net use x: \\__boot_host__\configfile /user:user pass</Path>
 			</RunSynchronousCommand>
 			<RunSynchronousCommand wcm:action="add">
 			  <Order>6</Order>
-			  <Path>netsh interface ipv4 add dns "Подключение по локальной сети" 8.8.8.8 index=1</Path>
+			  <Path>xcopy "x:\SetupComplete.cmd" %WINDIR%\Setup\Scripts\SetupComplete.cmd*</Path>
 			</RunSynchronousCommand>
-			<!-- SET COMPLETE STATE -->
 			<RunSynchronousCommand wcm:action="add">
-			  <Order>7</Order>
-			  <Path>powershell -NoLogo -Command "[System.Net.WebRequest]::Create('http://install.adman.cloud/api/v1.0/install/complete/__srv_name__?token=__token__').GetResponse()"</Path>
+			  <Order>8</Order>
+			  <Path>xcopy "x:\s307\set-ip.ps1" %WINDIR%\Setup\Scripts\set-ip.ps1*</Path>
 			</RunSynchronousCommand>
 		  </RunSynchronous>
 		</component>

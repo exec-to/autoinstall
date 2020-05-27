@@ -74,6 +74,7 @@ class InstallRun(Resource):
             Utils.create_config(request.json, adman_id, token)
             if 'windows' in os:
                 Utils.create_install_bat(request.json, adman_id)
+                Utils.create_win_set_ip_ps(ipaddr, token, adman_id)
 
             # api.logger.debug('req: {}'.format(request.json))
 
@@ -144,6 +145,7 @@ class InstallComplete(Resource):
             Utils.create_config(args, adman_id)
             Utils.remove_preseed_conf(adman_id)
             Utils.remove_install_bat(adman_id)
+            Utils.remove_win_set_ip_ps(adman_id)
 
             install.status = 1
             server.maintenance = False
@@ -207,6 +209,7 @@ class InstallBreak(Resource):
             Utils.create_config(args, adman_id)
             Utils.remove_preseed_conf(adman_id)
             Utils.remove_install_bat(adman_id)
+            Utils.remove_win_set_ip_ps(adman_id)
 
             install.status = 2
             server.maintenance = False
