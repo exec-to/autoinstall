@@ -125,21 +125,29 @@
 			  <Order>3</Order>
 			  <Path>netsh advfirewall firewall add rule name="139" protocol=TCP dir=in localport=139 action=block</Path>
 			</RunSynchronousCommand>
-            <RunSynchronousCommand wcm:action="add">
-			  <Order>4</Order>
-			  <Path>netsh advfirewall firewall add rule name="445" protocol=TCP dir=in localport=445 action=block</Path>
-			</RunSynchronousCommand>
 			<RunSynchronousCommand wcm:action="add">
 			  <Order>5</Order>
-			  <Path>net use x: \\__boot_host__\configfile /user:user pass</Path>
+			  <Path>ping 10.0.222.1</Path>
 			</RunSynchronousCommand>
 			<RunSynchronousCommand wcm:action="add">
 			  <Order>6</Order>
-			  <Path>xcopy "x:\SetupComplete.cmd" %WINDIR%\Setup\Scripts\SetupComplete.cmd*</Path>
+			  <Path>ping 10.0.222.1</Path>
+			</RunSynchronousCommand>
+			<RunSynchronousCommand wcm:action="add">
+			  <Order>7</Order>
+			  <Path>ping 10.0.222.1</Path>
 			</RunSynchronousCommand>
 			<RunSynchronousCommand wcm:action="add">
 			  <Order>8</Order>
-			  <Path>xcopy "x:\s307\set-ip.ps1" %WINDIR%\Setup\Scripts\set-ip.ps1*</Path>
+			  <Path>net use x: \\__boot_host__\configfile /user:user pass</Path>
+			</RunSynchronousCommand>
+			<RunSynchronousCommand wcm:action="add">
+			  <Order>9</Order>
+			  <Path>xcopy "x:\SetupComplete.cmd" %WINDIR%\Setup\Scripts\SetupComplete.cmd*</Path>
+			</RunSynchronousCommand>
+			<RunSynchronousCommand wcm:action="add">
+			  <Order>10</Order>
+			  <Path>xcopy "x:\s__srv_name__\set-ip.ps1" %WINDIR%\Setup\Scripts\set-ip.ps1*</Path>
 			</RunSynchronousCommand>
 		  </RunSynchronous>
 		</component>

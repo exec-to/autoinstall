@@ -1,0 +1,36 @@
+ipset create smb_clients hash:mac timeout 3600
+cron jobs
+# add clients
+
+* * * * * /usr/bin/mysql -D aidb -BNe \
+'select mac_addr \
+  from servers join mac_addr \
+  on mac_addr.server_id = servers.id \
+  where servers.maintenance = 1;' | \
+/usr/bin/xargs -i /bin/sh -c "/sbin/ipset -q add smb_clients {} timeout 3600";
+
+0 0 * * * wget -qN http://mirror.adman.com/debian/dists/buster/main/installer-amd64/current/images/netboot/debian-installer/amd64/linux -O /srv/tftp/images/debian/10/amd64/linux
+1 0 * * * wget -qN http://mirror.adman.com/debian/dists/jessie/main/installer-amd64/current/images/netboot/debian-installer/amd64/initrd.gz -O /srv/tftp/images/debian/8/amd64/initrd.gz
+1 0 * * * wget -qN http://mirror.adman.com/debian/dists/jessie/main/installer-amd64/current/images/netboot/debian-installer/amd64/linux -O /srv/tftp/images/debian/8/amd64/linux
+0 0 * * * wget -qN http://mirror.adman.com/debian/dists/buster/main/installer-amd64/current/images/netboot/debian-installer/amd64/initrd.gz -O /srv/tftp/images/debian/10/amd64/initrd.gz
+2 0 * * * wget -qN http://mirror.adman.com/debian/dists/stretch/main/installer-amd64/current/images/netboot/debian-installer/amd64/initrd.gz -O /srv/tftp/images/debian/9/amd64/initrd.gz
+2 0 * * * wget -qN http://mirror.adman.com/debian/dists/stretch/main/installer-amd64/current/images/netboot/debian-installer/amd64/linux -O /srv/tftp/images/debian/9/amd64/linux
+
+3 0 * * * wget -qN http://mirror.adman.com/ubuntu/dists/trusty/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/linux -O /srv/tftp/images/ubuntu/14/amd64/linux
+3 0 * * * wget -qN http://mirror.adman.com/ubuntu/dists/trusty/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/initrd.gz -O /srv/tftp/images/ubuntu/14/amd64/initrd.gz
+4 0 * * * wget -qN http://mirror.adman.com/ubuntu/dists/xenial/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/linux -O /srv/tftp/images/ubuntu/16/amd64/linux
+4 0 * * * wget -qN http://mirror.adman.com/ubuntu/dists/xenial/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/initrd.gz -O /srv/tftp/images/ubuntu/16/amd64/initrd.gz
+5 0 * * * wget -qN http://mirror.adman.com/ubuntu/dists/bionic/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/linux -O /srv/tftp/images/ubuntu/18/amd64/linux
+5 0 * * * wget -qN http://mirror.adman.com/ubuntu/dists/bionic/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/initrd.gz -O /srv/tftp/images/ubuntu/18/amd64/initrd.gz
+6 0 * * * wget -qN http://mirror.adman.com/ubuntu/dists/focal/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/linux -O /srv/tftp/images/ubuntu/20/amd64/linux
+6 0 * * * wget -qN http://mirror.adman.com/ubuntu/dists/focal/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/initrd.gz -O /srv/tftp/images/ubuntu/20/amd64/initrd.gz
+
+7 0 * * * wget -qN http://mirror.adman.com/centos/7/os/x86_64/isolinux/vmlinuz -O /srv/tftp/images/centos/7/amd64/vmlinuz
+7 0 * * * wget -qN http://mirror.adman.com/centos/7/os/x86_64/isolinux/initrd.img -O /srv/tftp/images/centos/7/amd64/initrd.img
+8 0 * * * wget -qN http://mirror.adman.com/centos/8/BaseOS/x86_64/kickstart/images/pxeboot/vmlinuz -O /srv/tftp/images/centos/8/amd64/vmlinuz
+8 0 * * * wget -qN http://mirror.adman.com/centos/8/BaseOS/x86_64/kickstart/images/pxeboot/initrd.img -O /srv/tftp/images/centos/8/amd64/initrd.img
+
+iptables -N SAMBA_RULES
+iptables -I INPUT -p tcp -m multiport --dports 139,445 -j SAMBA_RULES
+iptables -A SAMBA_RULES -m set --match-set smb_clients src -j ACCEPT
+iptables -A SAMBA_RULES -j DROP

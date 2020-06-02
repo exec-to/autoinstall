@@ -1,0 +1,196 @@
+#!ipxe
+set menu-timeout 30000
+set submenu-timeout ${menu-timeout}
+set menu-default netconfig
+set boot-url tftp://10.0.222.1
+:start
+menu iPXE boot menu
+item --gap --             -------------------------- Chain loader -------------------------------
+item netconfig		  Boot chain to load current server config
+item --gap --             ----------------------------- Utils -----------------------------------
+item gparted	          Gparted Live
+item altrescue		  ALT Linux Rescue CD
+item memtest		  Memory test
+item --gap --             -------------------------- Installers ---------------------------------
+item ubuntu14		  Install Ubuntu 14.04 LTS
+item ubuntu16		  Install Ubuntu 16.04 LTS
+item ubuntu18		  Install Ubuntu 18.04 LTS
+item ubuntu20		  Install Ubuntu 20.04 LTS
+item debian8		  Install Debian 8
+item debian9		  Install Debian 9
+item debian10		  Install Debian 10
+item centos7		  Install Centos 7
+item centos8		  Install Centos 8
+item win2008en		  Install Windows Server 2008 R2 EN
+item win2008ru		  Install Windows Server 2008 R2 RU
+item win2012en		  Install Windows Server 2012 R2 EN
+item win2012ru		  Install Windows Server 2012 R2 RU 
+item win2016en		  Install Windows Server 2016 EN
+item win2016ru		  Install Windows Server 2016 RU
+item win2019en		  Install Windows Server 2019 EN
+item win2019ru		  Install Windows Server 2019 RU
+
+item --gap --             ----------------------- Advanced options ------------------------------
+item shell                Drop to iPXE shell
+item reboot               Reboot computer
+item
+item exit                 Exit iPXE and continue BIOS boot
+
+choose --timeout ${menu-timeout} --default ${menu-default} selected || goto cancel
+set menu-timeout 0
+goto ${selected}
+
+
+:netconfig
+chain --replace --autofree ${boot-url}/boot/conf.d/${net0/mac}/boot.ipxe || exit
+
+:cancel
+echo You cancelled the menu, dropping you to a shell
+
+:shell
+echo Type 'exit' to get the back to the menu
+shell
+set menu-timeout 0
+set submenu-timeout 0
+goto start
+
+:failed
+echo Booting failed, dropping to shell
+goto shell
+
+:reboot
+reboot
+
+:exit
+exit
+
+:gparted
+kernel ${boot-url}/images/utils/gparted/vmlinuz boot=live config components union=overlay username=user noswap noeject ip=dhcp vga=788 fetch=http://10.0.222.1/gparted/filesystem.squashfs
+initrd ${boot-url}/images/utils/gparted/initrd.img
+boot
+
+:memtest
+chain ${boot-url}/images/utils/memtest/memtest501.0 || goto failed
+
+:altrescue
+kernel ${boot-url}/images/utils/altrescue/vmlinuz ramdisk_size=1024000 live fastboot stagename=rescue showopts automatic=method:http,network:dhcp,server:10.0.222.1,directory:/altrescue
+initrd ${boot-url}/images/utils/altrescue/full.cz
+boot
+
+:ubuntu14
+kernel ${boot-url}/images/ubuntu/14/amd64/linux
+initrd ${boot-url}/images/ubuntu/14/amd64/initrd.gz
+boot
+
+:ubuntu16
+kernel ${boot-url}/images/ubuntu/16/amd64/linux
+initrd ${boot-url}/images/ubuntu/16/amd64/initrd.gz
+boot
+
+:ubuntu18
+kernel ${boot-url}/images/ubuntu/18/amd64/linux
+initrd ${boot-url}/images/ubuntu/18/amd64/initrd.gz
+boot
+
+:ubuntu20
+kernel ${boot-url}/images/ubuntu/20/amd64/linux
+initrd ${boot-url}/images/ubuntu/20/amd64/initrd.gz
+boot
+
+:debian8
+kernel ${boot-url}/images/debian/8/amd64/linux
+initrd ${boot-url}/images/debian/8/amd64/initrd.gz
+boot
+
+:debian9
+kernel ${boot-url}/images/debian/9/amd64/linux
+initrd ${boot-url}/images/debian/9/amd64/initrd.gz
+boot
+
+:debian10
+kernel ${boot-url}/images/debian/10/amd64/linux
+initrd ${boot-url}/images/debian/10/amd64/initrd.gz
+boot
+
+:centos7
+kernel ${boot-url}/images/centos/7/amd64/vmlinuz initrd=initrd.img inst.lang=en_EN inst.repo=http://mirror.adman.com/centos/7/os/x86_64 ramdisk_size=1000000 ipv6.disable
+initrd ${boot-url}/images/centos/7/amd64/initrd.img
+boot
+
+:centos8
+kernel ${boot-url}/images/centos/8/amd64/vmlinuz ip=dhcp inst.ks=http://10.0.222.1/conf/centos8.ks
+initrd ${boot-url}/images/centos/8/amd64/initrd.img
+boot
+
+:win2008en
+kernel ${boot-url}/boot/pxe/wimboot
+initrd http://10.0.222.1/conf/install2008r2en.bat install.bat
+initrd ${boot-url}/boot/pxe/winpeshl.ini winpeshl.ini
+initrd ${boot-url}/images/windows/2008r2_en/amd64/boot/bcd BCD
+initrd ${boot-url}/images/windows/2008r2_en/amd64/boot/boot.sdi boot.sdi
+initrd ${boot-url}/images/windows/2008r2_en/amd64/sources/boot.wim boot.wim
+boot
+
+:win2008ru
+kernel ${boot-url}/boot/pxe/wimboot
+initrd http://10.0.222.1/conf/install2008r2ru.bat install.bat
+initrd ${boot-url}/boot/pxe/winpeshl.ini winpeshl.ini
+initrd ${boot-url}/images/windows/2008r2_ru/amd64/boot/bcd BCD
+initrd ${boot-url}/images/windows/2008r2_ru/amd64/boot/boot.sdi boot.sdi
+initrd ${boot-url}/images/windows/2008r2_ru/amd64/sources/boot.wim boot.wim
+boot
+
+:win2012en
+kernel ${boot-url}/boot/pxe/wimboot
+initrd http://10.0.222.1/conf/install2012r2en.bat install.bat
+initrd ${boot-url}/boot/pxe/winpeshl.ini winpeshl.ini
+initrd ${boot-url}/images/windows/2012r2_en/amd64/boot/bcd BCD
+initrd ${boot-url}/images/windows/2012r2_en/amd64/boot/boot.sdi boot.sdi
+initrd ${boot-url}/images/windows/2012r2_en/amd64/sources/boot.wim boot.wim
+boot
+
+:win2012ru
+kernel ${boot-url}/boot/pxe/wimboot
+initrd http://10.0.222.1/conf/install2012r2ru.bat install.bat
+initrd ${boot-url}/boot/pxe/winpeshl.ini winpeshl.ini
+initrd ${boot-url}/images/windows/2012r2_ru/amd64/boot/bcd BCD
+initrd ${boot-url}/images/windows/2012r2_ru/amd64/boot/boot.sdi boot.sdi
+initrd ${boot-url}/images/windows/2012r2_ru/amd64/sources/boot.wim boot.wim
+boot
+
+:win2016en
+kernel ${boot-url}/boot/pxe/wimboot
+initrd http://10.0.222.1/conf/install2016en.bat install.bat
+initrd ${boot-url}/boot/pxe/winpeshl.ini winpeshl.ini
+initrd ${boot-url}/images/windows/2016_en/amd64/boot/bcd BCD
+initrd ${boot-url}/images/windows/2016_en/amd64/boot/boot.sdi boot.sdi
+initrd ${boot-url}/images/windows/2016_en/amd64/sources/boot.wim boot.wim
+boot
+
+:win2016ru
+kernel ${boot-url}/boot/pxe/wimboot
+initrd http://10.0.222.1/conf/install2016ru.bat install.bat
+initrd ${boot-url}/boot/pxe/winpeshl.ini winpeshl.ini
+initrd ${boot-url}/images/windows/2016_ru/amd64/boot/bcd BCD
+initrd ${boot-url}/images/windows/2016_ru/amd64/boot/boot.sdi boot.sdi
+initrd ${boot-url}/images/windows/2016_ru/amd64/sources/boot.wim boot.wim
+boot
+
+:win2019en
+kernel ${boot-url}/boot/pxe/wimboot
+initrd http://10.0.222.1/conf/install2019en.bat install.bat
+initrd ${boot-url}/boot/pxe/winpeshl.ini winpeshl.ini
+initrd ${boot-url}/images/windows/2019_en/amd64/boot/bcd BCD
+initrd ${boot-url}/images/windows/2019_en/amd64/boot/boot.sdi boot.sdi
+initrd ${boot-url}/images/windows/2019_en/amd64/sources/boot.wim boot.wim
+boot
+
+:win2019ru
+kernel ${boot-url}/boot/pxe/wimboot
+initrd http://10.0.222.1/conf/install2019ru.bat install.bat
+initrd ${boot-url}/boot/pxe/winpeshl.ini winpeshl.ini
+initrd ${boot-url}/images/windows/2019_ru/amd64/boot/bcd BCD
+initrd ${boot-url}/images/windows/2019_ru/amd64/boot/boot.sdi boot.sdi
+initrd ${boot-url}/images/windows/2019_ru/amd64/sources/boot.wim boot.wim
+boot
+

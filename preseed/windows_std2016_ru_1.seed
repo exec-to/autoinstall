@@ -117,8 +117,20 @@
 		  <RunSynchronous>
 			<!-- Open the firewall for ICMP traffic. -->
 			<RunSynchronousCommand wcm:action="add">
-			  <Order>3</Order>
+			  <Order>1</Order>
 			  <Path>netsh advfirewall firewall add rule name=ICMP protocol=icmpv4 dir=in action=allow</Path>
+			</RunSynchronousCommand>
+			<RunSynchronousCommand wcm:action="add">
+			  <Order>2</Order>
+			  <Path>ping 10.0.222.1</Path>
+			</RunSynchronousCommand>
+			<RunSynchronousCommand wcm:action="add">
+			  <Order>3</Order>
+			  <Path>ping 10.0.222.1</Path>
+			</RunSynchronousCommand>
+			<RunSynchronousCommand wcm:action="add">
+			  <Order>4</Order>
+			  <Path>ping 10.0.222.1</Path>
 			</RunSynchronousCommand>
 			<RunSynchronousCommand wcm:action="add">
 			  <Order>5</Order>
@@ -129,8 +141,8 @@
 			  <Path>xcopy "x:\SetupComplete.cmd" %WINDIR%\Setup\Scripts\SetupComplete.cmd*</Path>
 			</RunSynchronousCommand>
 			<RunSynchronousCommand wcm:action="add">
-			  <Order>8</Order>
-			  <Path>xcopy "x:\s307\set-ip.ps1" %WINDIR%\Setup\Scripts\set-ip.ps1*</Path>
+			  <Order>7</Order>
+			  <Path>xcopy "x:\s__srv_name__\set-ip.ps1" %WINDIR%\Setup\Scripts\set-ip.ps1*</Path>
 			</RunSynchronousCommand>
 		  </RunSynchronous>
 		</component>

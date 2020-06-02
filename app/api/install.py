@@ -362,3 +362,43 @@ class Install(Resource):
             return {"message": msg, "success": False}, 400
 
         return install
+
+@api.route('/lasttoken/<int:adman_id>', endpoint='server_install_last_token_ep')
+class InstallLastToken(Resource):
+    @api.doc(params={
+        'adman_id': 'ID сервера в оборудовании adman',
+    })
+    @api.doc(security='apikey')
+    def get(self, adman_id):
+        """
+        Получить токен последней операции установки ОС сервера
+        """
+        headers = request.headers
+        api.logger.debug(headers)
+        auth = headers.get("X-Api-Key")
+        if auth != config.auth['adman']:
+            api.logger.debug('Unauthorized, 401')
+            return {"message": "Error: Unauthorized", "success": False}, 401
+
+        session = None
+        try:
+            session = sessionmaker(bind=core.engine)()
+        except Exception as e:
+            msg = 'Не удаётся инициализировать соединение с БД: {}'.format(str(e))
+            api.logger.error(msg)
+            abort(500, message=msg, success=False)
+
+        try:
+            server = session.query(CoreLib.Server).filter_by(adman_id=adman_id).first()
+            if server is None:
+                raise Exception('NotFound',
+                                'Не найден сервер c ID: {}. Обновите сначала его конфигурацию.'.format(adman_id))
+
+            install = session.query(CoreLib.Install).order_by(CoreLib.Install.id.desc()).filter_by(adman_id=adman_id).first()
+
+        except Exception as e:
+            msg = 'Не удаётся получить токен процесса установки: {}'.format(str(e))
+            api.logger.error(msg)
+            return {"success": False, "message": msg}, 500
+
+        return {"success": True, "token": install.token}

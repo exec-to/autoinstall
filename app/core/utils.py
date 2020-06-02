@@ -149,6 +149,9 @@ class Utils(object):
         with open(bat_config, 'a') as file:
             file.truncate(0)
             file.write('wpeinit\n')
+            file.write('ping 10.0.222.1\n')
+            file.write('ping 10.0.222.1\n')
+            file.write('ping 10.0.222.1\n')
             file.write('net use j: \\\\__boot_host__\\images\\__os_ver__\\amd64 /user:user pass\n')
             file.write('net use k: \\\\__boot_host__\\configfile /user:user pass\n')
             file.write('j:\\setup.exe /unattend:k:\\s__srv_name__\\s__srv_name__.seed\n')

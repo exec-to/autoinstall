@@ -1,0 +1,116 @@
+#!ipxe
+set menu-timeout 60000
+set submenu-timeout ${menu-timeout}
+set menu-default netconfig
+set boot-url tftp://10.0.222.1
+:start
+menu iPXE boot menu
+item --gap --             ------------------------- Chain loader ------------------------------
+item netconfig		  Boot chain to load current server config
+item --gap --             ---------------------------- Utils ----------------------------------
+item gparted	          Gparted Live
+item altrescue		  ALT Linux Rescue CD
+item memtest		  Memory test
+item --gap --             ------------------------- Installers --------------------------------
+item ubuntu14		  Install Ubuntu 14.04 LTS
+item ubuntu16		  Install Ubuntu 16.04 LTS
+item ubuntu18		  Install Ubuntu 18.04 LTS
+item ubuntu20		  Install Ubuntu 20.04 LTS
+item debian8		  Install Debian 8
+item debian9		  Install Debian 9
+item debian10		  Install Debian 10
+item centos7		  Install Centos 7
+item centos8		  Install Centos 8
+
+item --gap --             ---------------------- Advanced options -----------------------------
+item shell                Drop to iPXE shell
+item reboot               Reboot computer
+item
+item exit                 Exit iPXE and continue BIOS boot
+
+choose --timeout ${menu-timeout} --default ${menu-default} selected || goto cancel
+set menu-timeout 0
+goto ${selected}
+
+
+:netconfig
+chain --replace --autofree ${boot-url}/boot/conf.d/${net0/mac}/boot.ipxe || exit
+
+:cancel
+echo You cancelled the menu, dropping you to a shell
+
+:shell
+echo Type 'exit' to get the back to the menu
+shell
+set menu-timeout 0
+set submenu-timeout 0
+goto start
+
+:failed
+echo Booting failed, dropping to shell
+goto shell
+
+:reboot
+reboot
+
+:exit
+exit
+
+:gparted
+kernel ${boot-url}/images/utils/gparted/vmlinuz boot=live config components union=overlay username=user noswap noeject ip=dhcp vga=788 fetch=http://10.0.222.1/gparted/filesystem.squashfs
+initrd ${boot-url}/images/utils/gparted/initrd.img
+boot
+
+:memtest
+chain ${boot-url}/images/utils/memtest/memtest501.0 || goto failed
+
+:altrescue
+kernel ${boot-url}/images/utils/altrescue/vmlinuz ramdisk_size=1024000 live fastboot stagename=rescue showopts automatic=method:http,network:dhcp,server:10.0.222.1,directory:/altrescue
+initrd ${boot-url}/images/utils/altrescue/full.cz
+boot
+
+:ubuntu14
+kernel ${boot-url}/images/ubuntu/14/amd64/linux
+initrd ${boot-url}/images/ubuntu/14/amd64/initrd.gz
+boot
+
+:ubuntu16
+kernel ${boot-url}/images/ubuntu/16/amd64/linux
+initrd ${boot-url}/images/ubuntu/16/amd64/initrd.gz
+boot
+
+:ubuntu18
+kernel ${boot-url}/images/ubuntu/18/amd64/linux
+initrd ${boot-url}/images/ubuntu/18/amd64/initrd.gz
+boot
+
+:ubuntu20
+kernel ${boot-url}/images/ubuntu/20/amd64/linux
+initrd ${boot-url}/images/ubuntu/20/amd64/initrd.gz
+boot
+
+:debian8
+kernel ${boot-url}/images/debian/8/amd64/linux
+initrd ${boot-url}/images/debian/8/amd64/initrd.gz
+boot
+
+:debian9
+kernel ${boot-url}/images/debian/9/amd64/linux
+initrd ${boot-url}/images/debian/9/amd64/initrd.gz
+boot
+
+:debian10
+kernel ${boot-url}/images/debian/10/amd64/linux
+initrd ${boot-url}/images/debian/10/amd64/initrd.gz
+boot
+
+:centos7
+kernel ${boot-url}/images/centos/7/amd64/vmlinuz initrd=initrd.img inst.lang=en_EN inst.repo=http://mirror.adman.com/centos/7/os/x86_64 ramdisk_size=1000000 ipv6.disable
+initrd ${boot-url}/images/centos/7/amd64/initrd.img
+boot
+
+:centos8
+kernel ${boot-url}/images/centos/8/amd64/vmlinuz ip=dhcp inst.repo=http://10.0.222.1/centos/8/  devfs=nomount
+initrd ${boot-url}/images/centos/8/amd64/initrd.img
+boot
+
