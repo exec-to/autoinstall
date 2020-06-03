@@ -1,4 +1,0 @@
-#!ipxe
-#ifopen
-#dhcp
-chain --replace --autofree tftp://10.0.222.1/boot/conf.d/${net0/mac}/boot.ipxe || exit
