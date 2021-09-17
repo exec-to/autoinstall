@@ -1,3 +1,7 @@
+# Включить поддержку сетевой загрузки
+d-i disk-detect/ibft/enable boolean true
+d-i partman-iscsi/iscsi_auto boolean true
+
 # Настройки локализации
 # --------------------------------------------------------------------------
 d-i debian-installer/language string en
@@ -19,19 +23,11 @@ d-i keyboard-configuration/variantcode string
 # --------------------------------------------------------------------------
 d-i netcfg/disable_autoconfig boolean true
 d-i netcfg/dhcp_failed note
-d-i netcfg/dhcp_options select Configure network manually
-d-i preseed/early_command string kill-all-dhcp; netcfg
-d-i netcfg/choose_interface select auto
+d-i netcfg/choose_interface select enp6s0
 d-i netcfg/link_wait_timeout string 15
-d-i netcfg/disable_autoconfig boolean true
-d-i netcfg/get_ipaddress string __ipaddr__
-d-i netcfg/get_netmask string __netmask__
-d-i netcfg/get_gateway string __gateway__
-d-i netcfg/get_nameservers string 8.8.8.8
-d-i netcfg/confirm_static boolean true
 d-i netcfg/hostname string s__srv_name__
 d-i hw-detect/load_firmware boolean true
-d-i netcfg/dhcp_timeout string 15
+d-i netcfg/dhcp_timeout string 30
 
 # Mirror preseed file for the Debian Installer
 # --------------------------------------------------------------------------
@@ -61,11 +57,22 @@ d-i clock-setup/utc boolean false
 d-i time/zone string Europe/Moscow
 d-i clock-setup/ntp boolean true
 
+# iSCSI
+d-i   partman-iscsi/initiatorname     string  iqn.2021.adman:s__srv_name__
+d-i   partman-iscsi/iscsi_auto        boolean false
+d-i   partman-iscsi/login/address     string  10.0.224.7:3260
+d-i   partman-iscsi/login/all_targets boolean false
+d-i   partman-iscsi/login/failed      error
+d-i   partman-iscsi/login/incoming_username   string
+d-i   partman-iscsi/login/targets     multiselect     iqn.2000-05.com.3pardata:21210002ac0208a4
+d-i   partman-iscsi/login/username    string  s__srv_name__
+d-i   partman-iscsi/login/password    string  U18345Srv__srv_name__
+d-i   partman-iscsi/mainmenu  select  finish
 
 # Разметка диска
 # --------------------------------------------------------------------------
 d-i partman-auto/disk string /dev/sda
-d-i partman-auto/method string lvm
+d-i partman-auto/method string regular
 
 d-i partman/confirm_nooverwrite boolean true
 
@@ -77,24 +84,15 @@ d-i partman-md/confirm_nooverwrite boolean true
 d-i partman-md/device_remove_md boolean true
 d-i partman-md/confirm boolean true
 
-#d-i partman-lvm/device_remove_lvm boolean true
-# The same applies to pre-existing software RAID array:
-#d-i partman-md/device_remove_md boolean true
-# And the same goes for the confirmation to write the lvm partitions.
-#d-i partman-lvm/confirm boolean true
-#d-i partman-lvm/confirm_nooverwrite boolean true
-#
-d-i partman-auto-lvm/guided_size string max
 d-i partman-auto/choose_recipe select atomic
 d-i partman/default_filesystem string ext4
-#
+
 d-i partman-partitioning/confirm_write_new_label boolean true
 d-i partman/choose_partition select finish
 d-i partman/confirm boolean true
 d-i partman/confirm_nooverwrite boolean true
-#
-d-i partman/mount_style select uuid
 
+d-i partman/mount_style select uuid
 
 # Установка
 # --------------------------------------------------------------------------
@@ -132,5 +130,5 @@ d-i finish-install/reboot_in_progress note
 # Выполнить задачи перед завершением установки
 # --------------------------------------------------------------------------
 # enable root
-d-i preseed/late_command string sed -i 's/PermitRootLogin/#PermitRootLogin/' /target/etc/ssh/sshd_config && echo 'PermitRootLogin yes' >> /target/etc/ssh/sshd_config; wget --no-check-certificate https://install.adman.cloud/api/v1.0/install/complete/__srv_name__?token=__token__
+d-i preseed/late_command string wget --no-check-certificate https://install.adman.cloud/api/v1.0/info/netplan/__ipaddr__ -O /target/etc/netplan/01-netcfg.yaml; sed -i 's/PermitRootLogin/#PermitRootLogin/' /target/etc/ssh/sshd_config && echo 'PermitRootLogin yes' >> /target/etc/ssh/sshd_config; wget --no-check-certificate https://install.adman.cloud/api/v1.0/install/complete/__srv_name__?token=__token__
 # disable selinux (centos)

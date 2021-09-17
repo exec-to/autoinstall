@@ -15,10 +15,18 @@ class Server(Base):
     id = Column('id', Integer, primary_key=True)
     adman_id = Column(Integer, nullable=False)
     # api_key = Column(String(40), nullable=True)
+    dhcp_addr = Column(String(16), nullable=True)
     maintenance = Column(Boolean, default=False)
 
     def __init__(self, adman_id):
         self.adman_id = adman_id
+
+
+class System(Base):
+    __tablename__ = 'system'
+    id = Column('id', Integer, primary_key=True)
+    param_name = Column(String(16), nullable=True)
+    param_value = Column(String(255), nullable=True)
 
 # MAC-адреса сервера
 class MacTable(Base):
@@ -62,7 +70,9 @@ class Core:
             .format_map(config.database),
             echo=False,
             connect_args={'connect_timeout': 3600},
-	    pool_recycle=300
+            pool_recycle=300,
+            pool_size=20,
+            max_overflow=30
         )
 
         Base.metadata.create_all(self.engine)

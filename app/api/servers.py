@@ -114,13 +114,14 @@ class ServerConfigure(Resource):
         Обновить конфигурацию указанного сервера
         """
         headers = request.headers
-        api.logger.debug(headers)
+#        api.logger.debug(headers)
         auth = headers.get("X-Api-Key")
         if auth != config.auth['adman']:
             api.logger.debug('Unauthorized, 401')
             abort(401, success=False)
 
-        # api.logger.debug(request.json)
+#        api.logger.debug(request.json)
+#        api.logger.debug("--- 0 ---")
         session = None
         try:
             session = sessionmaker(bind=core.engine)()
@@ -129,20 +130,25 @@ class ServerConfigure(Resource):
             api.logger.error(msg)
             abort(500, message=msg, success=False)
 
+#        api.logger.debug("--- 1 ---")
+
         server = None
         try:
             server = session.query(CoreLib.Server).filter_by(adman_id=adman_id).first()
+#            api.logger.debug("--- 2 ---")
             if server is None:
                 server = CoreLib.Server(adman_id=adman_id)
                 session.add(server)
                 session.commit()
-
+	
+#            api.logger.debug("--- 3 ---")
             if server.maintenance:
                 msg = 'Сервер находится в режиме обслуживания. Внесение настроек заблокировано.'
                 abort(400, message=msg, success=False)
 
             Utils.create_server_dir(server.adman_id)
 
+#            api.logger.debug("--- 4 ---")
             # Проверяем, используются ли MAC-адреса другими серверами
             for item in request.json:
                 filters = [
@@ -150,9 +156,14 @@ class ServerConfigure(Resource):
                 ]
                 macs = session.query(CoreLib.MacTable)
                 macs = apply_filters(macs, filters).all()
-
+                
+#                api.logger.debug("--- 5 ---")
                 # Проверяем, используются ли MAC-адреса другими серверами
                 for mac in macs:
+                    if not mac.mac_addr:
+                        continue
+
+                    api.logger.debug(mac.mac_addr)
                     if mac.server_id != server.id:
                         msg = 'MAC-адрес {} уже используется сервером с ID: {}'.format(mac.mac_addr, mac.server_id)
                         api.logger.error(msg)
@@ -163,26 +174,28 @@ class ServerConfigure(Resource):
             filters = [
                 {'field': 'server_id', 'op': '==', 'value': server.id}
             ]
+#            api.logger.debug("--- 6 ---")
             macs = session.query(CoreLib.MacTable)
             macs = apply_filters(macs, filters).all()
-
+#            api.logger.debug("--- 7 ---")
             for mac in macs:
-                api.logger.debug("mac: {}".format(mac.mac_addr))
+#                api.logger.debug("XXXAS_mac: {}".format(mac.mac_addr))
                 Utils.remove_symbol_link(mac.mac_addr)
                 session.delete(mac)
 
             session.commit()
-
+#            api.logger.debug("--- 8 ---")
             # Добавляем MAC-адреса в БД и создаём символьные ссылки.
             for item in request.json:
                 macaddr = CoreLib.MacTable(server_id=server.id, mac_addr=item['mac_addr'].lower())
+#                api.logger.debug("0XFFF__mac: {}".format(macaddr))
                 session.add(macaddr)
                 Utils.create_symbol_link(server.adman_id, item['mac_addr'].lower())
-
+#            api.logger.debug("--- 9 ---")
             session.commit()
-
+	    #api.logger.debug("REQ_COMMIT")
             #Создаём начальный конфиг
-            args = {'os': 'local', 'osver': '0'}
+            args = {'os': 'local', 'osver': '0', 'diskpart': '0'}
             Utils.create_config(args, server.adman_id)
 
         except Exception as e:

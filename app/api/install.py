@@ -68,8 +68,24 @@ class InstallRun(Resource):
             os = request.json['os'].lower()
             osver = request.json['osver'].lower()
 
-            # api.logger.debug('req: {}'.format(request.json))
-            # api.logger.debug('args: {}'.format(args))
+            if int(diskpart) == 2 and not server.dhcp_addr:
+                api.logger.debug('call generate dhcp addr')
+                system = session.query(CoreLib.System).filter_by(param_name='dhcp_ipaddr').first()
+                last_dhcp_addr = Utils.get_dhcp_addr(system.param_value)
+                server.dhcp_addr = last_dhcp_addr
+                system.param_value = last_dhcp_addr
+                session.commit()
+
+            dhcp_addr = server.dhcp_addr
+            mac_addr = session.query(CoreLib.MacTable).filter_by(server_id=server.id).all()
+
+            if int(diskpart) == 2 and dhcp_addr:
+               # api.logger.debug('call create_dhcp_config')
+                Utils.create_dhcp_config(adman_id, mac_addr, dhcp_addr, router=True)
+               # api.logger.debug('after create_dhcp_config')
+
+            # api.logger.debug('diskpart: {}'.format(diskpart))
+            # api.logger.debug('dhcp_addr: {}'.format(dhcp_addr))
 
             Utils.create_config(request.json, adman_id, token)
             if 'windows' in os:
@@ -142,6 +158,14 @@ class InstallComplete(Resource):
                 raise Exception('AlreadyBreak',
                                 'Операция уже была отменена ранее.')
 
+            args['diskpart'] = install.diskpart
+
+            mac_addr = session.query(CoreLib.MacTable).filter_by(server_id=server.id).all()
+            dhcp_addr = server.dhcp_addr
+
+            if install.diskpart == 2 and dhcp_addr:
+                Utils.create_dhcp_config(adman_id, mac_addr, dhcp_addr, router=False)
+
             Utils.create_config(args, adman_id)
             Utils.remove_preseed_conf(adman_id)
             Utils.remove_install_bat(adman_id)
@@ -157,7 +181,6 @@ class InstallComplete(Resource):
             return {"message": msg, "success": False}, 400
 
         return {"success": True}
-
 
 @api.route('/break/<int:adman_id>', endpoint='server_install_break_ep')
 class InstallBreak(Resource):
@@ -205,6 +228,14 @@ class InstallBreak(Resource):
             if install.status == 2:
                 raise Exception('AlreadyBreak',
                                 'Операция отмены уже была завершена ранее.')
+
+            args['diskpart'] = install.diskpart
+
+            mac_addr = session.query(CoreLib.MacTable).filter_by(server_id=server.id).all()
+            dhcp_addr = server.dhcp_addr
+
+            if install.diskpart == 2 and dhcp_addr:
+                Utils.create_dhcp_config(adman_id, mac_addr, dhcp_addr, router=False)
 
             Utils.create_config(args, adman_id)
             Utils.remove_preseed_conf(adman_id)
@@ -269,6 +300,8 @@ class InstallPrestart(Resource):
             if install.status == 2:
                 raise Exception('AlreadyBreak',
                                 'Установка уже была отменена ранее.')
+
+            args['diskpart'] = install.diskpart
 
             Utils.create_config(args, adman_id)
 

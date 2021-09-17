@@ -1,4 +1,14 @@
-ipset create smb_clients hash:mac timeout 3600
+ipset create dhcp_clients hash:mac timeout 70
+iptables -N DHCP_RULES;
+iptables -I FORWARD -i enp3s0 -j DHCP_RULES;
+iptables -A DHCP_RULES -o docker0 -j ACCEPT;
+iptables -A DHCP_RULES -m set --match-set dhcp_clients src -j ACCEPT;
+# iptables -A DHCP_RULES -j LOG --log-prefix "DHCP_DROP: "
+iptables -A DHCP_RULES -j DROP;
+
+* * * * * /usr/bin/mysql -D aidb -BNe 'select mac_addr from mac_addr;' | /usr/bin/xargs -i /bin/sh -c "/sbin/ipset -exist -q add dhcp_clients {} timeout 70";
+
+# ipset create smb_clients hash:mac timeout 3600
 cron jobs
 # add clients
 
