@@ -435,3 +435,4 @@ class InstallLastToken(Resource):
             return {"success": False, "message": msg}, 500
 
         return {"success": True, "token": install.token}
+

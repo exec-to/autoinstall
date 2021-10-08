@@ -95,7 +95,7 @@ class Utils(object):
 
     @staticmethod
     def remove_symbol_link(link):
-        rm_cmd = "/bin/rm -f {dir}/{link}".format(
+        rm_cmd = "/bin/rm -rf {dir}/{link}".format(
             dir = config.utils['config-directory'],
             link=link
         )

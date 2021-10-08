@@ -204,3 +204,56 @@ class ServerConfigure(Resource):
             abort(400, message=msg, success=False)
 
         return {"success": True} 
+
+
+@api.route('/purge/<int:adman_id>', endpoint='server_purge_ep')
+class Server(Resource):
+    @api.doc(params={'adman_id': 'ID сервера в оборудовании adman'})
+    @api.doc(security='apikey')
+    @api.marshal_with(ServerModel, skip_none=True)
+    def put(self, adman_id):  # Create GET endpoint
+        """
+        Очисть конфигурацию сервера и установок
+        """
+        session = None
+
+        headers = request.headers
+        auth = headers.get("X-Api-Key")
+        if auth != config.auth['adman']:
+            abort(401, success=False)
+        try:
+            session = sessionmaker(bind=core.engine)()
+        except Exception as e:
+            msg = 'Не удаётся инициализировать соединение с БД: {}'.format(str(e))
+            api.logger.error(msg)
+            abort(500, message=msg, success=False)
+
+        server = None
+        try:
+            server = session.query(CoreLib.Server).filter_by(adman_id=adman_id).first()
+            if server is None:
+                raise Exception('NotFound', 'Не найден сервер c ID: {}'.format(adman_id))
+
+            # remove server mac address
+            macs = session.query(CoreLib.MacTable).filter_by(server_id=server.id).all()
+            for mac in macs:
+                Utils.remove_symbol_link(mac.mac_addr)
+                session.delete(mac)
+            
+            # remove installs 
+            installs = session.query(CoreLib.Install).filter_by(adman_id=adman_id).all()
+            for install in installs:        
+                session.delete(install)
+            
+            # remove server
+            Utils.remove_symbol_link("s{adman_id}".format(adman_id=adman_id))
+            session.delete(server)
+
+            session.commit()
+
+        except Exception as e:
+            msg = 'Не удаётся выполнить операцию. Error: {}'.format(str(e))
+            api.logger.error(msg)
+            abort(400, message=msg, success=False)
+
+        return server
